@@ -1,0 +1,5 @@
+../Core/Src/invicto_motor.c:20:6:motorDirection	24	static
+../Core/Src/invicto_motor.c:44:6:setMotorSpeed	40	static
+../Core/Src/invicto_motor.c:63:6:Inverse_Kinematics	104	static
+../Core/Src/invicto_motor.c:83:6:start	104	static
+../Core/Src/invicto_motor.c:139:6:nanjak	104	static
