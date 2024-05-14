@@ -68,8 +68,18 @@ double PID_controller(double setpoint, double actual_position, uint8_t pidMode)
 	switch(pidMode)
 	{
 	case 1:
-		Kp = 1.5, Ki = 0.0, Kd = 0.0;
+		Kp = 1100/fabs(setpoint - actual_position), Ki = 0.0, Kd = 0.0;
 		tau = 0.1;
+//		if(setpoint < 100)
+//		{
+//			Kp = 550/fabs(setpoint - actual_position), Ki = 0.0, Kd = 0.0;
+//			tau = 0.1;
+//		}
+//		else
+//		{
+//			Kp = 15, Ki = 0.0, Kd = 0.0;
+//			tau = 0.1;
+//		}
 		break;
 	case 2:
 		if(setpoint > 0 && setpoint < 100)
@@ -126,8 +136,21 @@ double PID_controller(double setpoint, double actual_position, uint8_t pidMode)
 		}
 		break;
 	case 4:
-		Kp = 1.0, Ki = 0.0, Kd = 0.0;
-		tau = 0.1;
+		if(setpoint < 100)
+		{
+			Kp = 500/fabs(setpoint - actual_position), Ki = 0.0, Kd = 0.0;
+			tau = 0.1;
+		}
+		else if(setpoint < 500)
+		{
+			Kp = 1500/fabs(setpoint - actual_position), Ki = 0.0, Kd = 0.0;
+			tau = 0.1;
+		}
+		else
+		{
+			Kp = 2400/fabs(setpoint - actual_position), Ki = 0.0, Kd = 0.0;
+			tau = 0.1;
+		}
 		break;
 	case 5:
 		Kp = 30.0, Ki = 0.0, Kd = 0.0;
@@ -158,15 +181,20 @@ double PID_controllerH(double setpoint, double actual_position)
 	double error, P;
 	if(setpoint >= 45 && setpoint < 90)
 	{
-		Kp = 1.7;
+		Kp = 2.0;
 	}
 	else if(setpoint >= 90 && setpoint < 135)
 	{
-		Kp = 2.5;
+		Kp = 1.2;
 	}
 	else if(setpoint >= 135)
 	{
-		Kp = 3.3;
+		Kp = 0.8;
+	}
+	else
+	{
+//		Kp = 4.5;
+		Kp = 68/fabs(setpoint - actual_position);
 	}
 
 	if((setpoint - actual_position) > 180)

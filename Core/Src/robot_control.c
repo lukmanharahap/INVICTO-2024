@@ -212,31 +212,226 @@ void PID_coba(EKF setpoint, uint8_t pidMode, double lookaheadDistance)
 
 void findtheBall()
 {
-	/*
-	 * Camera data:
-	 * 1: ball distance
-	 * 2: ball angle
-	 * 3: 3 ball existence
-	 * 4: silo distance
-	 * 5: silo angle
-	 */
-	int yBALL = camera[0];
-	int ballAngle = camera[1];
-	int xBALL = tan(ballAngle*M_PI/180) * yBALL;
+    /*
+     * Camera data:
+     * camera[0]: ball distance (in cm)
+     * camera[1]: ball angle (in degree)
+     * camera[2]: ball existence (number of balls)
+     * camera[3]: silo distance (in cm)
+     * camera[4]: silo angle (in degree)
+     */
 
-	double Vx = PID_controller(xBALL, 0.0, 3);
-	double Vy = PID_controller(yBALL, 0.0, 3);
-	double W = PID_controllerH(ballAngle, 0.0);
+    static double lastBallAngle = 0, lastxBall = 0, lastyBall = 0;
 
-    smoothVelocity(&Vx, &Vy, &W, 0.5);
+    int ballDistance = camera[0] * 10; // convert to mm
+    int ballAngle = camera[1];
+    int ballExistence = camera[2];
+    int xBALL = sin(ballAngle * M_PI / 180) * ballDistance;
+    int yBALL = cos(ballAngle * M_PI / 180) * ballDistance;
+    static bool motorState = false;
+    static bool motorCorrWithoutBall = false;
+    static bool motorCorrWithBall = false;
 
-	//	goto the ball
-	if(xBALL != 0 && yBALL != 0 && ballAngle != 0)
-	{
-		Inverse_Kinematics(Vx, Vy, W);
-	}
-	else
-	{
-		Inverse_Kinematics(0, 0, 120);
-	}
+    uint32_t timer = HAL_GetTick();
+    uint32_t lastTime = 0;
+
+    double Vx = PID_controller(xBALL, 0, 1);
+    double Vy = PID_controller(yBALL, 0, 1);
+    double W = PID_controllerH(ballAngle, 0);
+
+    if (ballExistence != 0)
+    {
+    	lastxBall = xBALL;
+    	lastyBall = yBALL;
+    	lastBallAngle = ballAngle;
+
+    	W = PID_controllerH(ballAngle, 0.0);
+    	setMotorSpeed(5, -500);
+        if(abs(ballAngle) < 20)
+        {
+        	start(0, 1600, 0, 4);
+        }
+        else
+        {
+        	if(timer - lastTime >= 1000)
+        	{
+            	lastTime = timer;
+            	if(motorCorrWithBall)
+            	{
+                	putar(0, 0, W);
+                	setMotorSpeed(5, 0);
+                	motorCorrWithBall = false;
+            	}
+            	else
+            	{
+                	putar(0, 0, 0);
+                	setMotorSpeed(5, 0);
+                	motorCorrWithBall = true;
+            	}
+        	}
+        }
+    }
+    else
+    {
+        Vx = PID_controller(lastxBall, 0, 1);
+        Vy = PID_controller(lastyBall, 0, 1);
+        W = PID_controllerH(lastBallAngle, 0.0);
+
+        if(abs(lastBallAngle) >= 10)
+        {
+        	if(timer - lastTime >= 1000)
+        	{
+            	lastTime = timer;
+            	if(motorCorrWithoutBall)
+            	{
+                	setMotorSpeed(5, 0);
+                	putar(0, 0, W);
+                	motorCorrWithoutBall = false;
+            	}
+            	else
+            	{
+                	setMotorSpeed(5, 0);
+                	putar(0, 0, 0);
+                	motorCorrWithoutBall = true;
+            	}
+        	}
+        }
+        else if(lastBallAngle != 0 && abs(lastBallAngle) < 10)
+        {
+        	setMotorSpeed(5, -500);
+        	start(0, 1600, 0, 4);
+        }
+        else
+        {
+        	if(timer - lastTime >= 1000)
+        	{
+        		lastTime = timer;
+        		if(motorState)
+        		{
+                	setMotorSpeed(5, 0);
+                	putar(0, 0, 75);
+                	motorState = false;
+        		}
+        		else
+        		{
+                	setMotorSpeed(5, 0);
+                	putar(0, 0, 0);
+                	motorState = true;
+        		}
+        	}
+        }
+    }
+}
+
+void findSilo()
+{
+    /*
+     * Camera data:
+     * camera[0]: ball distance (in cm)
+     * camera[1]: ball angle (in degree)
+     * camera[2]: ball existence (number of balls)
+     * camera[3]: silo distance (in cm)
+     * camera[4]: silo angle (in degree)
+     */
+
+    static double lastSiloAngle = 0, lastxSilo = 0, lastySilo = 0;
+
+    int siloDistance = camera[3] * 10; // convert to mm
+    int siloAngle = camera[4];
+//    int siloExistence = camera[2];
+    int xSILO = sin(siloAngle * M_PI / 180) * siloDistance;
+    int ySILO = cos(siloAngle * M_PI / 180) * siloDistance;
+    static bool motorState = false;
+    static bool motorCorrWithoutSilo = false;
+    static bool motorCorrWithSilo = false;
+
+    uint32_t timer = HAL_GetTick();
+    uint32_t lastTime = 0;
+
+    double Vx = PID_controller(xSILO, 0, 1);
+    double Vy = PID_controller(ySILO, 0, 1);
+    double W = PID_controllerH(siloAngle, 0);
+
+    if (siloAngle != 0 && siloDistance != 0)
+    {
+    	lastxSilo = xSILO;
+    	lastySilo = ySILO;
+    	lastSiloAngle = siloAngle;
+
+    	W = PID_controllerH(siloAngle, 0.0);
+    	setMotorSpeed(5, -500);
+        if(abs(siloAngle) < 20)
+        {
+        	start(0, 1600, 0, 4);
+        }
+        else
+        {
+        	if(timer - lastTime >= 1000)
+        	{
+            	lastTime = timer;
+            	if(motorCorrWithSilo)
+            	{
+                	putar(0, 0, W);
+                	setMotorSpeed(5, 0);
+                	motorCorrWithSilo = false;
+            	}
+            	else
+            	{
+                	putar(0, 0, 0);
+                	setMotorSpeed(5, 0);
+                	motorCorrWithSilo = true;
+            	}
+        	}
+        }
+    }
+    else
+    {
+        Vx = PID_controller(lastxSilo, 0, 1);
+        Vy = PID_controller(lastySilo, 0, 1);
+        W = PID_controllerH(lastSiloAngle, 0.0);
+
+        if(abs(lastSiloAngle) >= 10)
+        {
+        	if(timer - lastTime >= 1000)
+        	{
+            	lastTime = timer;
+            	if(motorCorrWithoutSilo)
+            	{
+                	setMotorSpeed(5, 0);
+                	putar(0, 0, W);
+                	motorCorrWithoutSilo = false;
+            	}
+            	else
+            	{
+                	setMotorSpeed(5, 0);
+                	putar(0, 0, 0);
+                	motorCorrWithoutSilo = true;
+            	}
+        	}
+        }
+        else if(lastSiloAngle != 0 && abs(lastSiloAngle) < 10)
+        {
+        	setMotorSpeed(5, -500);
+        	start(0, 1600, 0, 4);
+        }
+        else
+        {
+        	if(timer - lastTime >= 1000)
+        	{
+        		lastTime = timer;
+        		if(motorState)
+        		{
+                	setMotorSpeed(5, 0);
+                	putar(0, 0, 75);
+                	motorState = false;
+        		}
+        		else
+        		{
+                	setMotorSpeed(5, 0);
+                	putar(0, 0, 0);
+                	motorState = true;
+        		}
+        	}
+        }
+    }
 }

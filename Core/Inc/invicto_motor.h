@@ -5,6 +5,7 @@
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include "odometry.h"
 
 #define stop 0
 #define backward 1
@@ -25,5 +26,7 @@ void setMotorSpeed(uint8_t motor, double speed);
 void Inverse_Kinematics(int Vx, int Vy, int W);
 void start(int Vx, int Vy, int W, uint8_t battery);
 void nanjak(int Vx, int Vy, int W);
+void putar(int Vx, int Vy, int W);
+void coba(int Vx, int Vy, int W);
 
 #endif

@@ -154,8 +154,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	}
 	else if((GPIO_Pin == Button_2_Pin) && (HAL_GPIO_ReadPin(Button_2_GPIO_Port, Button_2_Pin) == GPIO_PIN_RESET))
 	{
-		mode = mode + 1;
-		if(mode > 1)
+		mode = mode + 2;
+		if(mode > 2)
 		{
 			mode = 0;
 		}
@@ -251,7 +251,7 @@ int main(void)
 //	  cek2(tuning, position);
 	  cek(position);
 //	  displayKalman(position);
-//	  displayCounter(1);
+//	  displayCounter();
 
 //	  bool firstStep = fabs(first.x - position.x) < 10 && fabs(first.y - position.y) < 10 && fabs(first.h - position.h) < 0.5;
 	  bool secondStep = fabs(second.x - position.x) < 10 && fabs(second.y - position.y) < 10 && fabs(second.h - position.h) < 0.5;
@@ -264,9 +264,10 @@ int main(void)
 	  {
 		  case 1:
 			  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
-			  findtheBall();
+			  findSilo();
+//			  findtheBall();
 //			  PID_Tuning(tuning, 5.0, 0.0, 0.0);
-			  PID_steptoCoordinate(waypoint, 2, 10, sizeof(waypoint));
+//			  PID_steptoCoordinate(waypoint, 2, 10, sizeof(waypoint));
 //			  PID_coba(first, 3, 10);
 //			  if(position.y < 1500)
 //			  {
@@ -288,11 +289,12 @@ int main(void)
 			  break;
 		  case 2:
 			  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
-			  PID_Kalman(second, 2);
-			  if(secondStep)
-			  {
-				  mode = 3;
-			  }
+			  start(0, 2000, 0, 4);
+//			  PID_Kalman(second, 2);
+//			  if(secondStep)
+//			  {
+//				  mode = 3;
+//			  }
 			  break;
 		  case 3:
 			  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
@@ -749,8 +751,8 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOE, GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_0
-                          |GPIO_PIN_1, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOE, GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5
+                          |GPIO_PIN_6|GPIO_PIN_0|GPIO_PIN_1, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13|GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_12, GPIO_PIN_RESET);
@@ -758,8 +760,10 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14|GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : PE4 PE5 PE0 PE1 */
-  GPIO_InitStruct.Pin = GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_0|GPIO_PIN_1;
+  /*Configure GPIO pins : PE2 PE3 PE4 PE5
+                           PE0 PE1 */
+  GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5
+                          |GPIO_PIN_0|GPIO_PIN_1;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;

@@ -1,6 +1,6 @@
 ../Core/Src/pid.c:11:8:PID_for_tuning	88	static
 ../Core/Src/pid.c:32:8:PID_for_tuningH	88	static
-../Core/Src/pid.c:66:8:PID_controller	72	static
-../Core/Src/pid.c:156:8:PID_controllerH	40	static
-../Core/Src/pid.c:191:6:PIDController_Init	16	static
-../Core/Src/pid.c:204:8:PIDController_Update	72	static
+../Core/Src/pid.c:66:8:PID_controller	96	static
+../Core/Src/pid.c:179:8:PID_controllerH	48	static
+../Core/Src/pid.c:219:6:PIDController_Init	16	static
+../Core/Src/pid.c:232:8:PIDController_Update	72	static

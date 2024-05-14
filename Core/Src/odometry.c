@@ -102,6 +102,42 @@ robotPosition odometry()
     return currentPosition;
 }
 
+double getVelocity()
+{
+    /* ENCODER INTERNAL */
+    int dn1_in = counterIN1 - oldEncIN1;
+    int dn2_in = counterIN2 - oldEncIN2;
+    int dn3_in = counterIN3 - oldEncIN3;
+    int dn4_in = counterIN4 - oldEncIN4;
+    oldEncIN1 = counterIN1;
+    oldEncIN2 = counterIN2;
+    oldEncIN3 = counterIN3;
+    oldEncIN4 = counterIN4;
+
+    double dxIN = mm_per_tick_IN * (-dn1_in + dn2_in - dn3_in + dn4_in)/4 * cos(M_PI_4);
+    double dyIN = mm_per_tick_IN * (dn1_in + dn2_in + dn3_in + dn4_in)/4 * sin(M_PI_4);
+
+    double distanceIN = hypot(dxIN, dyIN);
+
+    /* ENCODER EXTERNAL */
+    int dn1 = counter1 - oldEnc1;
+    int dn2 = counter2 - oldEnc2;
+    int dn3 = counter3 - oldEnc3;
+    oldEnc1 = counter1;
+    oldEnc2 = counter2;
+    oldEnc3 = counter3;
+
+    double dx = mm_per_tick * (dn3 + (dn2 - dn1) * e12_e3 / e1_e2);
+    double dy = mm_per_tick * (dn1 + dn2) / 2.0;
+
+    double distance = hypot(dx, dy);
+
+    uint32_t dt = HAL_GetTick();
+    double velocity = (distance + distanceIN) / (2*dt);
+
+    return velocity;
+}
+
 // Process noise covariance matrix (Q)
 const double Q[STATE_DIM][STATE_DIM] = {
     {0.1, 0, 0},
@@ -268,36 +304,29 @@ void cek(EKF position)
 	lcd_write_string(buffer);
 }
 
-void displayCounter(uint8_t type)
+void displayCounter()
 {
-	switch (type)
-	{
-		case 1:
-			lcd_set_cursor(0, 0);
-			sprintf(buffer, "E1:%d", counterIN1);
-			lcd_write_string(buffer);
-			lcd_set_cursor(1, 0);
-			sprintf(buffer, "E2:%d", counterIN2);
-			lcd_write_string(buffer);
-			lcd_set_cursor(2, 0);
-			sprintf(buffer, "E3:%d", counterIN3);
-			lcd_write_string(buffer);
-			lcd_set_cursor(3, 0);
-			sprintf(buffer, "E4:%d", counterIN4);
-			lcd_write_string(buffer);
-			break;
-		default:
-			lcd_set_cursor(0, 0);
-			sprintf(buffer, "E1:%d", counter1);
-			lcd_write_string(buffer);
-			lcd_set_cursor(1, 0);
-			sprintf(buffer, "E2:%d", counter2);
-			lcd_write_string(buffer);
-			lcd_set_cursor(2, 0);
-			sprintf(buffer, "E3:%d", counter3);
-			lcd_write_string(buffer);
-			break;
-	}
+	lcd_set_cursor(0, 0);
+	sprintf(buffer, "I1:%d", counterIN1);
+	lcd_write_string(buffer);
+	lcd_set_cursor(1, 0);
+	sprintf(buffer, "I2:%d", counterIN2);
+	lcd_write_string(buffer);
+	lcd_set_cursor(2, 0);
+	sprintf(buffer, "I3:%d", counterIN3);
+	lcd_write_string(buffer);
+	lcd_set_cursor(3, 0);
+	sprintf(buffer, "I4:%d", counterIN4);
+	lcd_write_string(buffer);
+	lcd_set_cursor(0, 10);
+	sprintf(buffer, "E1:%d", counter1);
+	lcd_write_string(buffer);
+	lcd_set_cursor(1, 10);
+	sprintf(buffer, "E2:%d", counter2);
+	lcd_write_string(buffer);
+	lcd_set_cursor(2, 10);
+	sprintf(buffer, "E3:%d", counter3);
+	lcd_write_string(buffer);
 }
 
 void displayPosition(robotPosition position, uint8_t type)

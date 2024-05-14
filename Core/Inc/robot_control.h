@@ -7,6 +7,10 @@
 #include "invicto_motor.h"
 #include "odometry.h"
 
+#define gotoBall 0
+#define findBall 1
+#define stopRobot 2
+
 void smoothVelocity(double* Vx, double* Vy, double* W, double smoothingFactor);
 void PID_Tuning(EKF setpoint, double KP, double KI, double KD);
 void PID_movetoCoordinate(robotPosition setpoint, uint8_t type, uint8_t pidMode, double smoothingFactor);
@@ -18,5 +22,6 @@ void PID_gotoY(double setpoint_y, uint8_t pidMode);
 void PID_setDegree(double setpoint_h);
 void PID_coba(EKF setpoint, uint8_t pidMode, double lookaheadDistance);
 void findtheBall();
+void findSilo();
 
 #endif

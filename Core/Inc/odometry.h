@@ -69,7 +69,7 @@ MeasurementVector measurementFunction(StateVector X);
 EKF extendedKalmanFilter();
 void cek(EKF position);
 void cek2(EKF setpoint, EKF position);
-void displayCounter(uint8_t type);
+void displayCounter();
 void displayPosition(robotPosition position, uint8_t type);
 
 #endif

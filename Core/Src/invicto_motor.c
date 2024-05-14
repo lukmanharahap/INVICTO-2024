@@ -69,10 +69,52 @@ void Inverse_Kinematics(int Vx, int Vy, int W)
      double M3 = -sin(5 * M_PI_4) * Vx + cos(5 * M_PI_4) * Vy - R * W;
      double M4 = -sin(7 * M_PI_4) * Vx + cos(7 * M_PI_4) * Vy - R * W;
 
-     double V1 = (M1 > 500 || M1 < -500) ? fmin(fmax(M1, -2600), 2600) : ((M1 < -0) ? -500 : ((M1 > 0) ? 500 : 0));
-     double V2 = (M2 > 500 || M2 < -500) ? fmin(fmax(M2, -2600), 2600) : ((M2 < -0) ? -500 : ((M2 > 0) ? 500 : 0));
-     double V3 = (M3 > 500 || M3 < -500) ? fmin(fmax(M3, -2600), 2600) : ((M3 < -0) ? -500 : ((M3 > 0) ? 500 : 0));
-     double V4 = (M4 > 500 || M4 < -500) ? fmin(fmax(M4, -2600), 2600) : ((M4 < -0) ? -500 : ((M4 > 0) ? 500 : 0));
+     double V1 = (M1 > 550 || M1 < -550) ? fmin(fmax(M1, -2600), 2600) : ((M1 < -0) ? -550 : ((M1 > 0) ? 550 : 0));
+     double V2 = (M2 > 550 || M2 < -550) ? fmin(fmax(M2, -2600), 2600) : ((M2 < -0) ? -550 : ((M2 > 0) ? 550 : 0));
+     double V3 = (M3 > 550 || M3 < -550) ? fmin(fmax(M3, -2600), 2600) : ((M3 < -0) ? -550 : ((M3 > 0) ? 550 : 0));
+     double V4 = (M4 > 550 || M4 < -550) ? fmin(fmax(M4, -2600), 2600) : ((M4 < -0) ? -550 : ((M4 > 0) ? 550 : 0));
+
+     setMotorSpeed(6, V1);
+     setMotorSpeed(8, V2);
+     setMotorSpeed(4, V3);
+     setMotorSpeed(7, V4);
+}
+
+void coba(int Vx, int Vy, int W)
+{
+	 robotPosition currentPos = odometry();
+     double R = 7.6;
+     double theta = atan2(currentPos.y_global, currentPos.x_global);
+
+     double M1 = -sin(theta + 1 * M_PI_4) * Vx + cos(theta + 1 * M_PI_4) * Vy - R * W;
+     double M2 = -sin(theta + 3 * M_PI_4) * Vx + cos(theta + 3 * M_PI_4) * Vy - R * W;
+     double M3 = -sin(theta + 5 * M_PI_4) * Vx + cos(theta + 5 * M_PI_4) * Vy - R * W;
+     double M4 = -sin(theta + 7 * M_PI_4) * Vx + cos(theta + 7 * M_PI_4) * Vy - R * W;
+
+     double V1 = (M1 > 550 || M1 < -550) ? fmin(fmax(M1, -2600), 2600) : ((M1 < -0) ? -550 : ((M1 > 0) ? 550 : 0));
+     double V2 = (M2 > 550 || M2 < -550) ? fmin(fmax(M2, -2600), 2600) : ((M2 < -0) ? -550 : ((M2 > 0) ? 550 : 0));
+     double V3 = (M3 > 550 || M3 < -550) ? fmin(fmax(M3, -2600), 2600) : ((M3 < -0) ? -550 : ((M3 > 0) ? 550 : 0));
+     double V4 = (M4 > 550 || M4 < -550) ? fmin(fmax(M4, -2600), 2600) : ((M4 < -0) ? -550 : ((M4 > 0) ? 550 : 0));
+
+     setMotorSpeed(6, V1);
+     setMotorSpeed(8, V2);
+     setMotorSpeed(4, V3);
+     setMotorSpeed(7, V4);
+}
+
+void putar(int Vx, int Vy, int W)
+{
+     double R = 7.6;
+
+     double M1 = -sin(1 * M_PI_4) * Vx + cos(1 * M_PI_4) * Vy - R * W;
+     double M2 = -sin(3 * M_PI_4) * Vx + cos(3 * M_PI_4) * Vy - R * W;
+     double M3 = -sin(5 * M_PI_4) * Vx + cos(5 * M_PI_4) * Vy - R * W;
+     double M4 = -sin(7 * M_PI_4) * Vx + cos(7 * M_PI_4) * Vy - R * W;
+
+     double V1 = (M1 > 450 || M1 < -450) ? fmin(fmax(M1, -2600), 2600) : ((M1 < -0) ? -450 : ((M1 > 0) ? 450 : 0));
+     double V2 = (M2 > 450 || M2 < -450) ? fmin(fmax(M2, -2600), 2600) : ((M2 < -0) ? -450 : ((M2 > 0) ? 450 : 0));
+     double V3 = (M3 > 450 || M3 < -450) ? fmin(fmax(M3, -2600), 2600) : ((M3 < -0) ? -450 : ((M3 > 0) ? 450 : 0));
+     double V4 = (M4 > 450 || M4 < -450) ? fmin(fmax(M4, -2600), 2600) : ((M4 < -0) ? -450 : ((M4 > 0) ? 450 : 0));
 
      setMotorSpeed(6, V1);
      setMotorSpeed(8, V2);

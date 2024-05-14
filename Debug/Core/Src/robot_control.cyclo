@@ -8,4 +8,5 @@
 ../Core/Src/robot_control.c:168:6:PID_gotoY	1
 ../Core/Src/robot_control.c:176:6:PID_setDegree	1
 ../Core/Src/robot_control.c:184:6:PID_coba	1
-../Core/Src/robot_control.c:213:6:findtheBall	4
+../Core/Src/robot_control.c:213:6:findtheBall	14
+../Core/Src/robot_control.c:326:6:findSilo	15
