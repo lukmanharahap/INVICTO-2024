@@ -29,6 +29,7 @@ double headingIN = 0.0;
 /* END */
 
 extern int camera[5];
+extern int proximity[2];
 
 robotPosition odometry()
 {
@@ -284,11 +285,7 @@ void cek(EKF position)
 	lcd_write_string(buffer);
 
 	lcd_set_cursor(3, 0);
-	sprintf(buffer, "%d", camera[3]);
-	lcd_write_string(buffer);
-
-	lcd_set_cursor(0, 10);
-	sprintf(buffer, "%d", camera[4]);
+	sprintf(buffer, "%d", proximity[0]);
 	lcd_write_string(buffer);
 
 	lcd_set_cursor(1, 10);

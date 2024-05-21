@@ -112,7 +112,8 @@ void Error_Handler(void);
 #define EB_3_EXTI_IRQn EXTI9_5_IRQn
 
 /* USER CODE BEGIN Private defines */
-
+#define retry 50
+#define ballDetected 0
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

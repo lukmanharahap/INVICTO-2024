@@ -1,6 +1,67 @@
 #include <robot_control.h>
 
+extern TIM_HandleTypeDef htim2;
+
+static double prevAngleBall = 0.0;
+double kpAngle = 0.0;
 extern int camera[5];
+
+int map(int st1, int fn1, int st2, int fn2, int value)
+{
+    return (1.0*(value-st1))/((fn1-st1)*1.0) * (fn2-st2)+st2;
+}
+
+double lowPassFilter(double newValue, double oldValue, double alpha)
+{
+	return alpha * newValue + (1 - alpha) * oldValue;
+}
+
+double rampTrapezoidal(double current, double target, double maxVel, double maxAccel, double maxDecel, double dt)
+{
+    double delta = target - current;
+    double targetVel = 0;
+
+    if (fabs(delta) < 1e-5)
+    { // Close enough to target
+        return 0;
+    }
+
+    double direction = (delta > 0) ? 1 : -1;
+    double distanceToTarget = fabs(delta);
+
+    // Determine the maximum velocity that can be reached given the distance to the target
+    double velLimitByDistance = sqrt(2 * maxDecel * distanceToTarget);
+    targetVel = fmin(maxVel, velLimitByDistance);
+
+    // Accelerate or decelerate to the target velocity
+    if (current < targetVel)
+    {
+        current += maxAccel * dt;
+        if (current > targetVel)
+        {
+            current = targetVel;
+        }
+    }
+    else if (current > targetVel)
+    {
+        current -= maxDecel * dt;
+        if (current < targetVel)
+        {
+            current = targetVel;
+        }
+    }
+
+    return current * direction;
+}
+
+double limitRateOfChange(double current, double target, double maxChange)
+{
+    if (fabs(target - current) > maxChange)
+    {
+        return current + (target > current ? maxChange : -maxChange);
+    }
+    return target;
+}
 
 void smoothVelocity(double* Vx, double* Vy, double* W, double smoothingFactor)
 {
@@ -15,6 +76,72 @@ void smoothVelocity(double* Vx, double* Vy, double* W, double smoothingFactor)
     prevVx = *Vx;
     prevVy = *Vy;
     prevW = *W;
+}
+
+void servo_write(int angle)
+{
+	int i = map(0, 180, 25, 125, angle);
+	__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4, i);
+}
+
+void nyoba_gerak(EKF setpoint, uint8_t pidMode)
+{
+	EKF position = extendedKalmanFilter();
+
+	double Vx = 0.0;
+	double Vy = 0.0;
+	double W = 0.0;
+
+    uint32_t timer = HAL_GetTick();
+    uint32_t lastTime = 0;
+    static bool motorhState = false;
+    static bool motorxState = false;
+
+	Vx = PID_controller(setpoint.x, position.x, pidMode);
+	Vy = PID_controller(setpoint.y, position.y, pidMode);
+	W = PID_controllerH(setpoint.h, position.h);
+
+	if(position.y >= 2000 && position.y <= 3000)
+	{
+		if(fabs(position.h) > 1.5)
+		{
+	    	if(timer - lastTime >= 1000)
+	    	{
+	        	lastTime = timer;
+	        	if(motorhState)
+	        	{
+	        		Inverse_Kinematics(0, 0, W);
+	            	motorhState = false;
+	        	}
+	        	else
+	        	{
+	        		Inverse_Kinematics(0, 0, 0);
+	            	motorhState = true;
+	        	}
+	    	}
+		}
+		else if(fabs(position.x) > 50)
+		{
+	    	if(timer - lastTime >= 1000)
+	    	{
+	        	lastTime = timer;
+	        	if(motorxState)
+	        	{
+	        		Inverse_Kinematics(Vx, 0, 0);
+	            	motorxState = false;
+	        	}
+	        	else
+	        	{
+	        		Inverse_Kinematics(0, 0, 0);
+	            	motorxState = true;
+	        	}
+	    	}
+		}
+	}
+	else
+	{
+		Inverse_Kinematics(Vx, Vy, W);
+	}
 }
 
 void PID_Tuning(EKF setpoint, double KP, double KI, double KD)
@@ -64,46 +191,76 @@ void PID_movetoCoordinate(robotPosition setpoint, uint8_t type, uint8_t pidMode,
 void PID_Kalman(EKF setpoint, uint8_t pidMode)
 {
 	EKF position = extendedKalmanFilter();
-	double Vx = 0;
-	double Vy = 0;
-	double W = 0;
-
-//	int leftRange = 0;
-//	int frontRange = 0;
-//	int rightRange = 0;
-//
-//	if(frontRange < 30)
-//	{
-//		if(leftRange > rightRange)
-//		{
-//			Vx = -PID_controller(30.0, rightRange, 5);
-//		}
-//		else
-//		{
-//			Vx = PID_controller(30.0, leftRange, 5);
-//		}
-//	}
-//	else if(leftRange < 30)
-//	{
-//		Vx = PID_controller(30.0, leftRange, 5);
-//	}
-//	else if(rightRange < 30)
-//	{
-//		Vx = -PID_controller(30.0, rightRange, 5);
-//	}
-//	else
-//	{
-//		Vx = PID_controller(setpoint.x, position.x, pidMode);
-//		Vy = PID_controller(setpoint.y, position.y, pidMode);
-//		W = PID_controllerH(setpoint.h, position.h);
-//	}
+	double Vx = 0.0;
+	double Vy = 0.0;
+	double W = 0.0;
 
 	Vx = PID_controller(setpoint.x, position.x, pidMode);
 	Vy = PID_controller(setpoint.y, position.y, pidMode);
 	W = PID_controllerH(setpoint.h, position.h);
 
-    smoothVelocity(&Vx, &Vy, &W, 0.5);
 	Inverse_Kinematics(Vx, Vy, W);
+}
+
+void PID_nyoba(EKF setpoint, uint8_t pidMode)
+{
+	EKF position = extendedKalmanFilter();
+	double Vx = 0.0;
+	double Vy = 0.0;
+	double W = 0.0;
+
+    uint32_t timer = HAL_GetTick();
+    uint32_t lastTime = 0;
+    static bool motorhState = false;
+    static bool motorxState = false;
+
+	Vx = PID_controller(setpoint.x, position.x, pidMode);
+	Vy = PID_controller(setpoint.y, position.y, pidMode);
+	W = PID_controllerH(setpoint.h, position.h);
+
+	double Vx_filtered = 0.0, Vy_filtered = 0.0, W_filtered = 0.0;
+	Vx_filtered = lowPassFilter(Vx, Vx_filtered, 0.3);
+	Vy_filtered = lowPassFilter(Vy, Vy_filtered, 0.3);
+	W_filtered = lowPassFilter(W, W_filtered, 0.3);
+
+	if(fabs(position.h) > 1.5)
+	{
+    	if(timer - lastTime >= 1000)
+    	{
+        	lastTime = timer;
+        	if(motorhState)
+        	{
+        		Inverse_Kinematics(0, 0, W_filtered);
+            	motorhState = false;
+        	}
+        	else
+        	{
+        		Inverse_Kinematics(0, 0, 0);
+            	motorhState = true;
+        	}
+    	}
+	}
+	else if(fabs(position.x) > 40)
+	{
+    	if(timer - lastTime >= 1000)
+    	{
+        	lastTime = timer;
+        	if(motorxState)
+        	{
+        		Inverse_Kinematics(Vx_filtered, 0, 0);
+            	motorxState = false;
+        	}
+        	else
+        	{
+        		Inverse_Kinematics(0, 0, 0);
+            	motorxState = true;
+        	}
+    	}
+	}
+	else
+	{
+		Inverse_Kinematics(0, Vy_filtered, 0);
+	}
 }
 
 void PID_KFtocoordinate(EKF setpoint, uint8_t pidMode)
@@ -142,7 +299,7 @@ void PID_steptoCoordinate(EKF *setpoint, uint8_t pidMode, double tolerance, uint
 	double Vx = PID_controller(setpoint[index].x, currentPosition.x, pidMode);
 	double Vy = PID_controller(setpoint[index].y, currentPosition.y, pidMode);
 	double W = PID_controllerH(setpoint[index].h, currentPosition.h);
-	if(fabs(setpoint[index].x - currentPosition.x) < tolerance && fabs(setpoint[index].y - currentPosition.y) < tolerance && fabs(setpoint[index].h - currentPosition.h) < 0.5)
+	if(fabs(setpoint[index].x - currentPosition.x) < tolerance && fabs(setpoint[index].y - currentPosition.y) < tolerance && fabs(setpoint[index].h - currentPosition.h) < 2)
 	{
 		Inverse_Kinematics(0, 0, 0);
 		index++;
@@ -189,25 +346,37 @@ void PID_coba(EKF setpoint, uint8_t pidMode, double lookaheadDistance)
 	double Vy = PID_controller(setpoint.y, position.y, pidMode);
 	double W = PID_controllerH(setpoint.h, position.h);
 
-    // Calculate lookahead point
     double lookaheadX = position.x + lookaheadDistance * cos(position.h);
     double lookaheadY = position.y + lookaheadDistance * sin(position.h);
     double lookaheaderrorX = setpoint.x - lookaheadX;
     double lookaheaderrorY = setpoint.y - lookaheadY;
 
-    // Calculate orientation towards lookahead point
     double targetOrientation = atan2(lookaheadY - position.y, lookaheadX - position.x);
 
-    // Calculate error between current orientation and target orientation
     double orientationError = targetOrientation - position.h;
 
-    // Adjust velocities based on orientation error
     Vx += PID_controller(lookaheaderrorX, 0.0, pidMode);
     Vy += PID_controller(lookaheaderrorY, 0.0, pidMode);
-    W += PID_controllerH(orientationError, 0.0); // Adjusting for orientation error
+    W += PID_controllerH(orientationError, 0.0);
 
-    // Apply inverse kinematics
     Inverse_Kinematics(Vx, Vy, W);
+}
+
+void focusToTheBall()
+{
+    int ballDistance = camera[0] * 10; // convert to mm
+    int ballAngle = camera[1];
+    int ballExistence = camera[2];
+
+    double kp = 0.05;
+    int gndtoCam = 358; // in mm
+
+    int yBALL = cos(ballAngle * M_PI / 180.0) * ballDistance;
+    double focus = atan2(gndtoCam, yBALL) * 180.0 / M_PI;
+    prevAngleBall = focus;
+    int focusMapping = map(0, 90, 180, 90, prevAngleBall);
+    kpAngle = focusMapping + kp * (focusMapping - kpAngle);
+    servo_write(kpAngle);
 }
 
 void findtheBall()
@@ -222,7 +391,6 @@ void findtheBall()
      */
 
     static double lastBallAngle = 0, lastxBall = 0, lastyBall = 0;
-
     int ballDistance = camera[0] * 10; // convert to mm
     int ballAngle = camera[1];
     int ballExistence = camera[2];
@@ -235,9 +403,9 @@ void findtheBall()
     uint32_t timer = HAL_GetTick();
     uint32_t lastTime = 0;
 
-    double Vx = PID_controller(xBALL, 0, 1);
-    double Vy = PID_controller(yBALL, 0, 1);
-    double W = PID_controllerH(ballAngle, 0);
+    double Vx = PID_controller((double)xBALL, 0.0, 1);
+    double Vy = PID_controller((double)yBALL, 0.0, 1);
+    double W = PID_controllerH((double)ballAngle, 0.0);
 
     if (ballExistence != 0)
     {
@@ -245,11 +413,12 @@ void findtheBall()
     	lastyBall = yBALL;
     	lastBallAngle = ballAngle;
 
-    	W = PID_controllerH(ballAngle, 0.0);
-    	setMotorSpeed(5, -500);
-        if(abs(ballAngle) < 20)
+    	focusToTheBall();
+    	setMotorSpeed(1, -500);
+        if(ballAngle < 20 && ballAngle > 0)
         {
-        	start(0, 1600, 0, 4);
+        	Inverse_Kinematics(0, 1600, 0);
+//        	start(0, 1600, 0, 1);
         }
         else
         {
@@ -259,13 +428,13 @@ void findtheBall()
             	if(motorCorrWithBall)
             	{
                 	putar(0, 0, W);
-                	setMotorSpeed(5, 0);
+                	setMotorSpeed(1, 0);
                 	motorCorrWithBall = false;
             	}
             	else
             	{
                 	putar(0, 0, 0);
-                	setMotorSpeed(5, 0);
+                	setMotorSpeed(1, 0);
                 	motorCorrWithBall = true;
             	}
         	}
@@ -273,33 +442,34 @@ void findtheBall()
     }
     else
     {
-        Vx = PID_controller(lastxBall, 0, 1);
-        Vy = PID_controller(lastyBall, 0, 1);
+        Vx = PID_controller(lastxBall, 0.0, 1);
+        Vy = PID_controller(lastyBall, 0.0, 1);
         W = PID_controllerH(lastBallAngle, 0.0);
 
-        if(abs(lastBallAngle) >= 10)
+        servo_write(145);
+        if(!(lastBallAngle < 20 && lastBallAngle > 0))
         {
         	if(timer - lastTime >= 1000)
         	{
             	lastTime = timer;
             	if(motorCorrWithoutBall)
             	{
-                	setMotorSpeed(5, 0);
+                	setMotorSpeed(1, 0);
                 	putar(0, 0, W);
                 	motorCorrWithoutBall = false;
             	}
             	else
             	{
-                	setMotorSpeed(5, 0);
+                	setMotorSpeed(1, 0);
                 	putar(0, 0, 0);
                 	motorCorrWithoutBall = true;
             	}
         	}
         }
-        else if(lastBallAngle != 0 && abs(lastBallAngle) < 10)
+        else if(lastBallAngle != 0 && lastBallAngle > 0 && lastBallAngle < 20)
         {
-        	setMotorSpeed(5, -500);
-        	start(0, 1600, 0, 4);
+        	setMotorSpeed(1, -500);
+        	Inverse_Kinematics(0, 1600, 0);
         }
         else
         {
@@ -308,13 +478,13 @@ void findtheBall()
         		lastTime = timer;
         		if(motorState)
         		{
-                	setMotorSpeed(5, 0);
-                	putar(0, 0, 75);
+                	setMotorSpeed(1, 0);
+                	putar(0, 0, 85);
                 	motorState = false;
         		}
         		else
         		{
-                	setMotorSpeed(5, 0);
+                	setMotorSpeed(1, 0);
                 	putar(0, 0, 0);
                 	motorState = true;
         		}
@@ -338,7 +508,6 @@ void findSilo()
 
     int siloDistance = camera[3] * 10; // convert to mm
     int siloAngle = camera[4];
-//    int siloExistence = camera[2];
     int xSILO = sin(siloAngle * M_PI / 180) * siloDistance;
     int ySILO = cos(siloAngle * M_PI / 180) * siloDistance;
     static bool motorState = false;
@@ -348,9 +517,10 @@ void findSilo()
     uint32_t timer = HAL_GetTick();
     uint32_t lastTime = 0;
 
-    double Vx = PID_controller(xSILO, 0, 1);
-    double Vy = PID_controller(ySILO, 0, 1);
-    double W = PID_controllerH(siloAngle, 0);
+    double Vx = PID_controller((double)xSILO, 0.0, 1);
+    double Vy = PID_controller((double)ySILO, 0.0, 1);
+    double W = PID_controllerH((double)siloAngle, 0.0);
+    servo_write(160);
 
     if (siloAngle != 0 && siloDistance != 0)
     {
@@ -359,10 +529,15 @@ void findSilo()
     	lastSiloAngle = siloAngle;
 
     	W = PID_controllerH(siloAngle, 0.0);
-    	setMotorSpeed(5, -500);
-        if(abs(siloAngle) < 20)
+        if(abs(siloAngle) < 7 && abs(xSILO) < 10)
         {
-        	start(0, 1600, 0, 4);
+        	Inverse_Kinematics(0, 1600, 0);
+        	if(siloDistance < 50)
+        	{
+        		Inverse_Kinematics(0, 0, 0);
+            	setMotorSpeed(2, -1000);
+            	setMotorSpeed(3, -1000);
+        	}
         }
         else
         {
@@ -371,14 +546,16 @@ void findSilo()
             	lastTime = timer;
             	if(motorCorrWithSilo)
             	{
-                	putar(0, 0, W);
-                	setMotorSpeed(5, 0);
+            		Inverse_Kinematics(Vx, 0, W);
+                	setMotorSpeed(2, 0);
+                	setMotorSpeed(3, 0);
                 	motorCorrWithSilo = false;
             	}
             	else
             	{
                 	putar(0, 0, 0);
-                	setMotorSpeed(5, 0);
+                	setMotorSpeed(2, 0);
+                	setMotorSpeed(3, 0);
                 	motorCorrWithSilo = true;
             	}
         	}
@@ -386,33 +563,40 @@ void findSilo()
     }
     else
     {
-        Vx = PID_controller(lastxSilo, 0, 1);
-        Vy = PID_controller(lastySilo, 0, 1);
-        W = PID_controllerH(lastSiloAngle, 0.0);
+        Vx = PID_controller(lastxSilo < 0 ? lastxSilo++ : lastxSilo--, 0.0, 1);
+        Vy = PID_controller(lastySilo < 0 ? lastySilo++ : lastySilo--, 0.0, 1);
+        W = PID_controllerH(lastSiloAngle < 0 ? lastSiloAngle++ : lastSiloAngle--, 0.0);
 
-        if(abs(lastSiloAngle) >= 10)
+        if(abs(lastSiloAngle) >= 7)
         {
         	if(timer - lastTime >= 1000)
         	{
             	lastTime = timer;
             	if(motorCorrWithoutSilo)
             	{
-                	setMotorSpeed(5, 0);
-                	putar(0, 0, W);
+                	setMotorSpeed(2, 0);
+                	setMotorSpeed(3, 0);
+            		Inverse_Kinematics(Vx, 0, W);
                 	motorCorrWithoutSilo = false;
             	}
             	else
             	{
-                	setMotorSpeed(5, 0);
+                	setMotorSpeed(2, 0);
+                	setMotorSpeed(3, 0);
                 	putar(0, 0, 0);
                 	motorCorrWithoutSilo = true;
             	}
         	}
         }
-        else if(lastSiloAngle != 0 && abs(lastSiloAngle) < 10)
+        else if(lastSiloAngle != 0 && abs(lastSiloAngle) < 7 && abs(lastxSilo) < 10)
         {
-        	setMotorSpeed(5, -500);
-        	start(0, 1600, 0, 4);
+        	start(0, 1600, 0, 1);
+        	if(lastySilo < 50)
+        	{
+        		Inverse_Kinematics(0, 0, 0);
+            	setMotorSpeed(2, -1000);
+            	setMotorSpeed(3, -1000);
+        	}
         }
         else
         {
@@ -421,13 +605,15 @@ void findSilo()
         		lastTime = timer;
         		if(motorState)
         		{
-                	setMotorSpeed(5, 0);
-                	putar(0, 0, 75);
+                	setMotorSpeed(2, 0);
+                	setMotorSpeed(3, 0);
+                	putar(0, 0, 85);
                 	motorState = false;
         		}
         		else
         		{
-                	setMotorSpeed(5, 0);
+                	setMotorSpeed(2, 0);
+                	setMotorSpeed(3, 0);
                 	putar(0, 0, 0);
                 	motorState = true;
         		}

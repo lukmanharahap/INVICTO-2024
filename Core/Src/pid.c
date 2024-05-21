@@ -5,7 +5,7 @@ double integral = 0.0, derivative = 0.0, prev_error = 0.0;
 double prevMeasurement = 0.0;
 double Kp = 0.0, Ki = 0.0, Kd = 0.0;
 double tau = 0.1;
-double T = 0.005;
+double T = 0.01;
 /* END */
 
 double PID_for_tuning(double setpoint, double measurement, double KP, double KI, double KD)
@@ -68,8 +68,11 @@ double PID_controller(double setpoint, double actual_position, uint8_t pidMode)
 	switch(pidMode)
 	{
 	case 1:
-		Kp = 1100/fabs(setpoint - actual_position), Ki = 0.0, Kd = 0.0;
+		Kp = 0.5, Ki = 0.1, Kd = 0.0;
 		tau = 0.1;
+
+//		Kp = 1000/fabs(setpoint - actual_position), Ki = 0.0, Kd = 0.0;
+//		tau = 0.1;
 //		if(setpoint < 100)
 //		{
 //			Kp = 550/fabs(setpoint - actual_position), Ki = 0.0, Kd = 0.0;
@@ -82,56 +85,56 @@ double PID_controller(double setpoint, double actual_position, uint8_t pidMode)
 //		}
 		break;
 	case 2:
-		if(setpoint > 0 && setpoint < 100)
+		if(setpoint > 0 && setpoint < 120)
 		{
-			Kp = 35, Ki = 0.001, Kd = 0.0;
+			Kp = 30, Ki = 0.2, Kd = 0.0;
 			tau = 0.1;
 		}
-		else if(setpoint >= 100 && setpoint < 250)
+		else if(setpoint >= 120 && setpoint < 500)
 		{
-			Kp = 12, Ki = 0.0, Kd = 0.0;
+			Kp = 22, Ki = 0.2, Kd = 0.0;
 			tau = 0.1;
 		}
-		else if(setpoint >= 250 && setpoint < 750)
+		else if(setpoint >= 500 && setpoint < 1000)
 		{
-			Kp = 6, Ki = 0.0, Kd = 0.0;
+			Kp = 15, Ki = 0.2, Kd = 0.0;
 			tau = 0.1;
 		}
-		else if(setpoint >= 750 && setpoint < 2500)
+		else if(setpoint >= 1000 && setpoint < 2500)
 		{
-			Kp = 3.2, Ki = 0.0, Kd = 0.0;
+			Kp = 2.0, Ki = 0.15, Kd = 0.0;
 			tau = 0.1;
 		}
 		else
 		{
-			Kp = 0.7, Ki = 0.0, Kd = 0.0;
+			Kp = 0.8, Ki = 0.1, Kd = 0.0;
 			tau = 0.1;
 		}
 		break;
 	case 3:
 		if(setpoint > 0 && setpoint < 100)
 		{
-			Kp = 35.0, Ki = 0.0, Kd = 0.0;
+			Kp = 40.0, Ki = 0.0, Kd = 0.0;
 			tau = 0.1;
 		}
 		else if(setpoint >= 100 && setpoint < 250)
 		{
-			Kp = 10.0, Ki = 0.0, Kd = 0.0;
+			Kp = 14.0, Ki = 0.0, Kd = 0.0;
 			tau = 0.1;
 		}
 		else if(setpoint >= 250 && setpoint < 750)
 		{
-			Kp = 6.0, Ki = 0.0, Kd = 0.0;
+			Kp = 5.0, Ki = 0.0, Kd = 0.0;
 			tau = 0.1;
 		}
-		else if(setpoint >= 750 && setpoint < 1200)
+		else if(setpoint >= 750 && setpoint < 1250)
 		{
-			Kp = 5.0, Ki = 0.0, Kd = 0.0;
+			Kp = 3.0, Ki = 0.0, Kd = 0.0;
 			tau = 0.1;
 		}
 		else
 		{
-			Kp = 1.0, Ki = 0.0, Kd = 0.0;
+			Kp = 1.2, Ki = 0.0, Kd = 0.0;
 			tau = 0.1;
 		}
 		break;
@@ -143,7 +146,7 @@ double PID_controller(double setpoint, double actual_position, uint8_t pidMode)
 		}
 		else if(setpoint < 500)
 		{
-			Kp = 1500/fabs(setpoint - actual_position), Ki = 0.0, Kd = 0.0;
+			Kp = 1200/fabs(setpoint - actual_position), Ki = 0.0, Kd = 0.0;
 			tau = 0.1;
 		}
 		else
@@ -153,7 +156,7 @@ double PID_controller(double setpoint, double actual_position, uint8_t pidMode)
 		}
 		break;
 	case 5:
-		Kp = 30.0, Ki = 0.0, Kd = 0.0;
+		Kp = 2.0, Ki = 0.0, Kd = 0.0;
 		tau = 0.1;
 		break;
 	}
@@ -181,11 +184,11 @@ double PID_controllerH(double setpoint, double actual_position)
 	double error, P;
 	if(setpoint >= 45 && setpoint < 90)
 	{
-		Kp = 2.0;
+		Kp = 1.1;
 	}
 	else if(setpoint >= 90 && setpoint < 135)
 	{
-		Kp = 1.2;
+		Kp = 0.7;
 	}
 	else if(setpoint >= 135)
 	{
@@ -193,9 +196,9 @@ double PID_controllerH(double setpoint, double actual_position)
 	}
 	else
 	{
-//		Kp = 4.5;
-		Kp = 68/fabs(setpoint - actual_position);
+		Kp = 1.7;
 	}
+//	Kp = 550/(7.6 * fabs(setpoint - actual_position));
 
 	if((setpoint - actual_position) > 180)
 	{

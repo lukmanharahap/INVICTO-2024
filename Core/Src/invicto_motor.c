@@ -9,7 +9,7 @@ Motor motors[NUM_MOTORS] =
         {GPIOE, GPIO_PIN_6, GPIOC, GPIO_PIN_13, TIM_CHANNEL_2, &htim8},		//2
         {GPIOE, GPIO_PIN_4, GPIOE, GPIO_PIN_5, TIM_CHANNEL_3, &htim1},		//3
         {GPIOC, GPIO_PIN_12, GPIOD, GPIO_PIN_0, TIM_CHANNEL_4, &htim8},		//4
-        {GPIOE, GPIO_PIN_2, GPIOE, GPIO_PIN_3, TIM_CHANNEL_1, &htim8},		//5
+        {GPIOE, GPIO_PIN_3, GPIOE, GPIO_PIN_2, TIM_CHANNEL_1, &htim8},		//5
         {GPIOD, GPIO_PIN_1, GPIOD, GPIO_PIN_2, TIM_CHANNEL_2, &htim1},		//6
         {GPIOE, GPIO_PIN_1, GPIOE, GPIO_PIN_0, TIM_CHANNEL_3, &htim8},		//7
         {GPIOC, GPIO_PIN_5, GPIOC, GPIO_PIN_4, TIM_CHANNEL_4, &htim1},		//8
@@ -77,7 +77,7 @@ void Inverse_Kinematics(int Vx, int Vy, int W)
      setMotorSpeed(6, V1);
      setMotorSpeed(8, V2);
      setMotorSpeed(4, V3);
-     setMotorSpeed(7, V4);
+     setMotorSpeed(5, V4);
 }
 
 void coba(int Vx, int Vy, int W)
@@ -99,7 +99,7 @@ void coba(int Vx, int Vy, int W)
      setMotorSpeed(6, V1);
      setMotorSpeed(8, V2);
      setMotorSpeed(4, V3);
-     setMotorSpeed(7, V4);
+     setMotorSpeed(5, V4);
 }
 
 void putar(int Vx, int Vy, int W)
@@ -119,7 +119,7 @@ void putar(int Vx, int Vy, int W)
      setMotorSpeed(6, V1);
      setMotorSpeed(8, V2);
      setMotorSpeed(4, V3);
-     setMotorSpeed(7, V4);
+     setMotorSpeed(5, V4);
 }
 
 void start(int Vx, int Vy, int W, uint8_t battery)
@@ -129,10 +129,10 @@ void start(int Vx, int Vy, int W, uint8_t battery)
 
     switch (battery)
     {
-		case 1: // > 24.5
+		case 1: // 24.3 < x < 24.6
 			M1 = (-sin(1 * M_PI_4) * Vx + cos(1 * M_PI_4) * Vy - R * W);
-			M2 = (-sin(3 * M_PI_4) * Vx + cos(3 * M_PI_4) * Vy - R * W);
-			M3 = (-sin(5 * M_PI_4) * Vx + cos(5 * M_PI_4) * Vy - R * W);
+			M2 = (-sin(3 * M_PI_4) * Vx + cos(3 * M_PI_4) * Vy - R * W)*1.1;
+			M3 = (-sin(5 * M_PI_4) * Vx + cos(5 * M_PI_4) * Vy - R * W)*1.1;
 			M4 = (-sin(7 * M_PI_4) * Vx + cos(7 * M_PI_4) * Vy - R * W);
 			break;
     	case 2: // > 24.3
@@ -175,7 +175,7 @@ void start(int Vx, int Vy, int W, uint8_t battery)
     setMotorSpeed(6, V1);
     setMotorSpeed(8, V2);
     setMotorSpeed(4, V3);
-    setMotorSpeed(7, V4);
+    setMotorSpeed(5, V4);
 }
 
 void nanjak(int Vx, int Vy, int W)
@@ -195,5 +195,5 @@ void nanjak(int Vx, int Vy, int W)
     setMotorSpeed(6, V1);
     setMotorSpeed(8, V2);
     setMotorSpeed(4, V3);
-    setMotorSpeed(7, V4);
+    setMotorSpeed(5, V4);
 }
