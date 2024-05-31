@@ -113,7 +113,6 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN Private defines */
 #define retry 50
-#define ballDetected 0
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

@@ -4,7 +4,7 @@
 ../Core/Src/odometry.c:171:19:measurementFunction	112	static
 ../Core/Src/odometry.c:181:5:extendedKalmanFilter	576	static
 ../Core/Src/odometry.c:237:6:displayKalman	32	static
-../Core/Src/odometry.c:250:6:cek2	56	static
-../Core/Src/odometry.c:273:6:cek	32	static
-../Core/Src/odometry.c:304:6:displayCounter	8	static
-../Core/Src/odometry.c:329:6:displayPosition	8	static
+../Core/Src/odometry.c:264:6:cek2	56	static
+../Core/Src/odometry.c:287:6:cek	32	static
+../Core/Src/odometry.c:322:6:displayCounter	8	static
+../Core/Src/odometry.c:347:6:displayPosition	8	static

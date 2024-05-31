@@ -102,12 +102,5 @@ void lcd_clear(void)
 
 void lcd_backlight(uint8_t state)
 {
-  if (state)
-  {
-    backlight_state = 1;
-  }
-  else
-  {
-    backlight_state = 0;
-  }
+	backlight_state = state ? 1 : 0;
 }

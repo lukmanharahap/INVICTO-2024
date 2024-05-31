@@ -11,6 +11,18 @@
 #define findBall 1
 #define stopRobot 2
 
+typedef enum {
+    STATE_FIND_BALL,
+    STATE_MOVE_TOWARDS_BALL,
+    STATE_SEARCH_BALL
+} BallState;
+
+typedef enum {
+    STATE_FIND_SILO,
+    STATE_MOVE_TOWARDS_SILO,
+    STATE_SEARCH_SILO
+} SiloState;
+
 int map(int st1, int fn1, int st2, int fn2, int value);
 double lowPassFilter(double newValue, double oldValue, double alpha);
 double rampTrapezoidal(double current, double target, double maxVel, double maxAccel, double maxDecel, double dt);

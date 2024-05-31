@@ -26,7 +26,38 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
+typedef enum
+{
+	VOID,
+	AREA1_TO_AREA2,
+	RIGHT_AREA2,
+	AREA2_TO_AREA3,
+	AREA3_SPINNING,
+	GOTO_STORAGE,
+	FACING_SILO,
+	GOTO_SILO,
+	STORAGE_AREA,
+	SILO_AREA,
+	BACKWARD_TO_STORAGE,
+	FACING_STORAGE,
+	RETRY,
+	RETRY2,
+	RETRY3,
+	RETRY4,
+	TRIAL,
+	TRIAL2,
+	TRIAL3,
+	TRIAL4,
+	TRIAL5,
+	TRIAL6,
+	TRIAL7,
+	TRIAL8,
+	RUNNINGTEST_1,
+	RUNNINGTEST_2,
+	RUNNINGTEST_3,
+	NEXT_STEP,
+	NEXT_STEP2
+} movingState;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -54,24 +85,50 @@ UART_HandleTypeDef huart3;
 volatile int counter1 = 0, counter2 = 0, counter3 = 0;
 volatile int counterIN1 = 0, counterIN2 = 0, counterIN3 = 0, counterIN4 = 0;
 
-/*   SENSOR MPU6050   */
+/*   IMU Sensor MPU6050   */
 uint8_t receive[50];
 uint32_t rxIndex = 0;
 uint32_t dataIndex = 0;
 double sensorData[2];
 
 /*   CAMERA   */
+/*
+ * Data from camera:
+ * index 0 -> Ball Distance
+ * index 1 -> Ball Angle
+ * index 2 -> Ball Existence
+ * index 3 -> Silo 1 Distance
+ * index 4 -> Silo 1 Angle
+ * index 5 -> Silo 2 Distance
+ * index 6 -> Silo 2 Angle
+ * index 7 -> Silo 3 Distance
+ * index 8 -> Silo 3 Angle
+ * index 9 -> Silo 4 Distance
+ * index 10 -> Silo 4 Angle
+ * index 11 -> Silo 5 Distance
+ * index 12 -> Silo 5 Angle
+ *
+ * Default distance for silo if its not detected is 9999
+ * Default angle for silo if its not detected is 999
+ */
 uint8_t receiveCAM[50];
 uint32_t indexCAM = 0;
 uint32_t dataindexCAM = 0;
-int camera[5];
+int camera[13];
 
-/*   SENSOR Proximity   */
-uint8_t receivePROX[50];
-uint32_t indexPROX = 0;
-uint32_t dataindexPROX = 0;
-int proximity[2];
-
+/*   Arduino Mega   */
+/*
+ * Data from Arduino Mega:
+ * index 0 -> Front left Distance
+ * index 1 -> Front right Distance
+ * index 2 -> Left Distance
+ * index 3 -> Color (0 if blue else otherwise)
+ * index 4 -> Proximity
+ */
+uint8_t receiveMEGA[50];
+uint32_t indexMEGA = 0;
+uint32_t dataindexMEGA = 0;
+int sensorMEGA[5];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -90,7 +147,7 @@ static void MX_USART3_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-uint8_t mode = 0;
+movingState mode = VOID;
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
@@ -134,8 +191,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	// BUTTON
 	else if((GPIO_Pin == Button_1_Pin) && (HAL_GPIO_ReadPin(Button_1_GPIO_Port, Button_1_Pin) == GPIO_PIN_RESET))
 	{
-		mode = mode + 1;
-		if(mode > 1)
+		mode = mode + AREA1_TO_AREA2;
+		if(mode > AREA1_TO_AREA2)
 		{
 			mode = 0;
 		}
@@ -143,8 +200,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	}
 	else if((GPIO_Pin == Button_2_Pin) && (HAL_GPIO_ReadPin(Button_2_GPIO_Port, Button_2_Pin) == GPIO_PIN_RESET))
 	{
-		mode = mode + retry;
-		if(mode > retry)
+		mode = mode + RETRY;
+		if(mode > RETRY)
 		{
 			mode = 0;
 		}
@@ -152,8 +209,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	}
 	else if((GPIO_Pin == Button_3_Pin) && (HAL_GPIO_ReadPin(Button_3_GPIO_Port, Button_3_Pin) == GPIO_PIN_RESET))
 	{
-		mode = mode + 7;
-		if(mode > 7)
+		mode = mode + RUNNINGTEST_1;
+		if(mode > RUNNINGTEST_1)
 		{
 			mode = 0;
 		}
@@ -161,8 +218,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	}
 	else if((GPIO_Pin == Button_4_Pin) && (HAL_GPIO_ReadPin(Button_4_GPIO_Port, Button_4_Pin) == GPIO_PIN_RESET))
 	{
-		mode = mode + 1;
-		if(mode > 1)
+		mode = mode + AREA1_TO_AREA2;
+		if(mode > AREA1_TO_AREA2)
 		{
 			mode = 0;
 		}
@@ -207,7 +264,6 @@ int main(void)
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
-  lcd_init();
   HAL_TIM_PWM_Start_IT(&htim1, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start_IT(&htim1, TIM_CHANNEL_2);
   HAL_TIM_PWM_Start_IT(&htim1, TIM_CHANNEL_3);
@@ -216,26 +272,23 @@ int main(void)
   HAL_TIM_PWM_Start_IT(&htim8, TIM_CHANNEL_2);
   HAL_TIM_PWM_Start_IT(&htim8, TIM_CHANNEL_3);
   HAL_TIM_PWM_Start_IT(&htim8, TIM_CHANNEL_4);
+  HAL_TIM_PWM_Start_IT(&htim2, TIM_CHANNEL_3);
   HAL_TIM_PWM_Start_IT(&htim2, TIM_CHANNEL_4);
 
   HAL_UART_Receive_IT(&huart1, receive, 1);
   HAL_UART_Receive_IT(&huart2, receiveCAM, 1);
-  HAL_UART_Receive_IT(&huart3, receivePROX, 1);
+  HAL_UART_Receive_IT(&huart3, receiveMEGA, 1);
 
 //  EKF tuning = {0.0, 6000.0, 0.0};
-  EKF first = {0.0, 6700.0, 0.0};
-  EKF second = {4300.0, 6650.0, 0.0};
-  EKF third = {4250.0, 10200.0, 0.0};
-  EKF fourth = {4300.0, 10000.0, -90.0};
-  EKF fifth = {4300.0, 13000.0, -90.0};
-  EKF sixth = {4300.0, 12000.0, 90.0};
+  EKF first = {140.0, 6700.0, 0.0};
+  EKF second = {4240.0, 6750.0, 0.0};
+  EKF third = {4300.0, 11000.0, 0.0};
+  EKF fourth = {4300.0, 11000.0, -90.0};
+  EKF fifth = {4400.0, 14000.0, -90.0};
   EKF retry1 = {300.0, 0.0, 0.0};
-  EKF retry2 = {250.0, 1000.0, 0.0};
-  EKF retry3 = {4300.0, 1500.0, 0.0};
+  EKF retry2 = {250.0, 850.0, 0.0};
+  EKF retry3 = {4300.0, 1000.0, 0.0};
   EKF retry4 = {4300.0, 4650.0, 0.0};
-  EKF retry5 = {4300.0, 4600.0, -90.0};
-  EKF retry6 = {4300.0, 8000.0, -90.0};
-  EKF coba = {0.0, 2500.0, -90.0};
 
 //  EKF waypoint[4] = {
 //		  {0.0, 6800.0, 0.0},
@@ -245,66 +298,70 @@ int main(void)
 //  };
 
   uint8_t battery = 1;
-  static bool motorState = false;
-
+  int tolerance = 400;
+  double Vx = 0.0, Vy = 0.0, W = 0.0;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  lcd_init();
 	  EKF position = extendedKalmanFilter();
-//	  displayKalman(position);
-	  cek(position);
+	  displayKalman(position);
 
-	  bool firstStep = fabs(first.x - position.x) < 200 && fabs(first.y - position.y) < 200 && fabs(first.h - position.h) < 0.5;
-	  bool secondStep = fabs(second.x - position.x) < 200 && fabs(second.y - position.y) < 200 && fabs(second.h - position.h) < 0.5;
-	  bool thirdStep = fabs(third.x - position.x) < 200 && fabs(third.y - position.y) < 200 && fabs(third.h - position.h) < 0.5;
-	  bool fourthStep = fabs(fourth.x - position.x) < 200 && fabs(fourth.y - position.y) < 200 && fabs(fourth.h - position.h) < 0.5;
-	  bool fifthStep = fabs(fifth.x - position.x) < 200 && fabs(fifth.y - position.y) < 200 && fabs(fifth.h - position.h) < 0.5;
-	  bool sixthStep = fabs(sixth.x - position.x) < 200 && fabs(sixth.y - position.y) < 200 && fabs(sixth.h - position.h) < 0.5;
-	  bool retry1Step = fabs(retry1.x - position.x) < 200 && fabs(retry1.y - position.y) < 200 && fabs(retry1.h - position.h) < 0.5;
-	  bool retry2Step = fabs(retry2.x - position.x) < 200 && fabs(retry2.y - position.y) < 200 && fabs(retry2.h - position.h) < 0.5;
-	  bool retry3Step = fabs(retry3.x - position.x) < 200 && fabs(retry3.y - position.y) < 200 && fabs(retry3.h - position.h) < 0.5;
-	  bool retry4Step = fabs(retry4.x - position.x) < 200 && fabs(retry4.y - position.y) < 200 && fabs(retry4.h - position.h) < 0.5;
-	  bool retry5Step = fabs(retry5.x - position.x) < 200 && fabs(retry5.y - position.y) < 200 && fabs(retry5.h - position.h) < 0.5;
-	  bool retry6Step = fabs(retry6.x - position.x) < 200 && fabs(retry6.y - position.y) < 200 && fabs(retry6.h - position.h) < 0.5;
+	  int frontLeftDistance = sensorMEGA[0];
+	  int frontRightDistance = sensorMEGA[1];
 
-	  int ballExistence = proximity[0];
-	  bool siloDetected = false;
+	  bool firstStep = fabs(first.x - position.x) < tolerance && fabs(first.y - position.y) < tolerance && fabs(first.h - position.h) < 1;
+	  bool secondStep = fabs(second.x - position.x) < tolerance && fabs(second.y - position.y) < tolerance && fabs(second.h - position.h) < 1;
+	  bool thirdStep = fabs(third.x - position.x) < tolerance && fabs(third.y - position.y) < tolerance && fabs(third.h - position.h) < 1;
+	  bool fourthStep = fabs(fourth.x - position.x) < tolerance && fabs(fourth.y - position.y) < tolerance && fabs(fourth.h - position.h) < 1;
+	  bool fifthStep = fabs(fifth.x - position.x) < tolerance && fabs(fifth.y - position.y) < tolerance && fabs(fifth.h - position.h) < 1;
+	  bool retry1Step = fabs(retry1.x - position.x) < tolerance && fabs(retry1.y - position.y) < tolerance && fabs(retry1.h - position.h) < 1;
+	  bool retry2Step = fabs(retry2.x - position.x) < tolerance && fabs(retry2.y - position.y) < tolerance && fabs(retry2.h - position.h) < 1;
+	  bool retry3Step = fabs(retry3.x - position.x) < tolerance && fabs(retry3.y - position.y) < tolerance && fabs(retry3.h - position.h) < 1;
+	  bool retry4Step = fabs(retry4.x - position.x) < tolerance && fabs(retry4.y - position.y) < tolerance && fabs(retry4.h - position.h) < 1;
+
+	  uint32_t timer = HAL_GetTick();
+	  uint32_t lastTime = 0;
 
 	  switch(mode)
 	  {
-		  case 1:
+		  case AREA1_TO_AREA2:
 			  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
+			  lastTime = timer;
 			  if(position.y < 1500)
 			  {
 				  start(0, 1900, 0, battery);
 			  }
 			  else if(position.y >= 1500 && position.y <= 4500)
 			  {
-				  double gain = sensorData[1] * 100;
-				  start(0, 2000 + gain, 0, battery);
+				  double gain = sensorData[1] * 200;
+				  start(0, 1600 + gain, 0, battery);
 			  }
 			  else
 			  {
-				  PID_Kalman(first, 1);
+				  lastTime = timer;
+				  PID_Kalman(first, 3);
 				  if(firstStep)
 				  {
-					  mode = 2;
+					  mode = RIGHT_AREA2;
 				  }
 			  }
 			  break;
-		  case 2:
+		  case RIGHT_AREA2:
 			  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
-			  uint32_t timer = HAL_GetTick();
-			  uint32_t lastTime = 0;
-
-			  double W = PID_controllerH(0.0, position.h);
+			  bool motorState = false;
+			  W = PID_controllerH(0.0, position.h, 3);
 			  PID_Kalman(second, 2);
+//			  if(position.x < 3500)
+//			  {
+//				  kanan(1800, 0, 0);
+//			  }
 			  if(secondStep)
 			  {
-				  if(fabs(position.h) > 0.5)
+				  if(fabs(second.h - position.h) >= 0.5)
 				  {
 			        	if(timer - lastTime >= 1000)
 			        	{
@@ -312,22 +369,21 @@ int main(void)
 			            	if(motorState)
 			            	{
 			                	Inverse_Kinematics(0, 0, W);
-			                	motorState = false;
 			            	}
 			            	else
 			            	{
 			            		Inverse_Kinematics(0, 0, 0);
-			                	motorState = true;
 			            	}
+			            	motorState = !motorState;
 			        	}
 				  }
 				  else
 				  {
-					  mode = 3;
+					  mode = AREA2_TO_AREA3;
 				  }
 			  }
 			  break;
-		  case 3:
+		  case AREA2_TO_AREA3:
 			  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
 			  if(position.y < 9000)
 			  {
@@ -339,165 +395,322 @@ int main(void)
 				  PID_Kalman(third, 3);
 				  if(thirdStep)
 				  {
-					  mode = 4;
+					  mode = TRIAL;
 				  }
 			  }
 			  break;
-		  case 4:
+		  case AREA3_SPINNING:
 			  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
 			  PID_Kalman(fourth, 3);
 			  if(fourthStep)
 			  {
-				  mode = 5;
+				  mode = GOTO_STORAGE;
 			  }
 			  break;
-		  case 5:
+		  case GOTO_STORAGE:
 			  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
 			  PID_Kalman(fifth, 3);
 			  if(fifthStep)
 			  {
-				  mode = 6;
+				  mode = STORAGE_AREA;
 			  }
 			  break;
-		  case 6:
-			  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
+		  case STORAGE_AREA:
 			  findtheBall();
-			  if(ballExistence == ballDetected)
-			  {
-				  setMotorSpeed(2, -500);
-//				  mode = 0;
-			  }
-			  break;
-		  case 7:
-			  PID_setDegree(-90.0);
-			  if(fabs(-90 - position.h) < 1)
-			  {
-				  mode = 8;
-			  }
-			  break;
-		  case 8:
-			  PID_Kalman(coba, 1);
-			  if(fabs(coba.y - position.y) < 200 && fabs(coba.h - position.h) < 0.5)
-			  {
-				  mode = 9;
-			  }
-			  break;
-		  case 9:
-			  findtheBall();
-			  if(ballExistence == ballDetected)
+			  if(sensorMEGA[4] == 0)
 			  {
 				  Inverse_Kinematics(0, 0, 0);
-				  mode = 10;
-//				  uint32_t timer = HAL_GetTick();
-//				  uint32_t lastTime = 0;
-//				  setMotorSpeed(1, 500);
-//				  if(timer - lastTime >= 1000)
+				  mode = FACING_SILO;
+//				  if(sensorMEGA[2] == 0)
 //				  {
 //					  Inverse_Kinematics(0, 0, 0);
-//					  lastTime = timer;
-//					  mode = 10;
+//					  mode = FACING_SILO;
+//				  }
+//				  else
+//				  {
+//					  setMotorSpeed(1, -800);
+//					  setMotorSpeed(2, -800);
 //				  }
 			  }
 			  break;
-		  case 10:
+		  case FACING_SILO:
+			  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
 			  PID_setDegree(90.0);
-			  if(fabs(90.0 - position.h) < 5)
+			  if(fabs(90.0 - position.h))
 			  {
-				  start(0, 2000, 0, battery);
-				  if(camera[4] != 0)
-				  {
-					  mode = 11;
-				  }
+				  HAL_Delay(50);
+				  mode = GOTO_SILO;
 			  }
 			  break;
-		  case 11:
-			  findSilo();
+		  case GOTO_SILO:
+		  	  start(0, 2200, 0, 1);
+		  	  servo_write(70);
+		  	  if(camera[3] < 600 || camera[5] < 600 || camera[7] < 600 || camera[9] < 600 || camera[11] < 600)
+		  	  {
+		  		  Inverse_Kinematics(0, 0, 0);
+			  	  mode = SILO_AREA;
+		  	  }
 			  break;
-		  case retry:
+		  case SILO_AREA:
+			  findSilo();
+			  if ((frontLeftDistance != 0 && frontLeftDistance <= 20))
+			  {
+				  Inverse_Kinematics(0, 0, 0);
+				  setMotorSpeed(1, -800);
+				  setMotorSpeed(2, -800);
+				  HAL_Delay(5000);
+				  mode = BACKWARD_TO_STORAGE;
+			  }
+			  break;
+		  case BACKWARD_TO_STORAGE:
+			  start(0, -800, 0, battery);
+			  HAL_Delay(1000);
+			  mode = FACING_STORAGE;
+			  break;
+		  case FACING_STORAGE:
+			  PID_setDegree(-90.0);
+			  if(fabs(-90.0 - position.h) < 2)
+			  {
+			  	  start(0, 1600, 0, 1);
+			  	  HAL_Delay(2000);
+			  	  mode = STORAGE_AREA;
+			  }
+			  break;
+		  case RETRY:
 			  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
 			  PID_Kalman(retry1, 3);
 			  if(retry1Step)
 			  {
-				  mode = retry+1;
+				  mode = RETRY2;
 			  }
 			  break;
-		  case retry+1:
+		  case RETRY2:
 			  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
-			  PID_Kalman(retry2, 3);
-			  if(retry2Step)
+			  Vy = 1.5 * (1000 - position.y);
+			  W = (0.0 - position.h);
+			  if(position.y >= 850)
 			  {
-				  mode = retry+2;
-			  }
-		  	  break;
-		  case retry+2:
-			  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
-			  PID_Kalman(retry3, 2);
-			  if(retry3Step)
-			  {
-				  if(fabs(retry3.h - position.h) > 0.5)
+				  if(fabs(0.0 - position.h) < 0.7)
 				  {
-			        	if(timer - lastTime >= 1000)
-			        	{
-			            	lastTime = timer;
-			            	if(motorState)
-			            	{
-			                	Inverse_Kinematics(0, 0, W);
-			                	motorState = false;
-			            	}
-			            	else
-			            	{
-			            		Inverse_Kinematics(0, 0, 0);
-			                	motorState = true;
-			            	}
-			        	}
+					  Inverse_Kinematics(0, 0, 0);
+					  mode = RETRY3;
 				  }
 				  else
 				  {
-					  mode = retry+3;
+					  putar(0, 0, W);
+					  HAL_Delay(150);
+					  putar(0, 0, 0);
+					  HAL_Delay(150);
 				  }
-			  }
-			  break;
-		  case retry+3:
-			  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
-			  if(position.y < 4000)
-			  {
-				  double gain = sensorData[1] * 200;
-				  start(0, 1500 + gain, 0, battery);
 			  }
 			  else
 			  {
-				  PID_Kalman(retry4, 3);
-				  if(retry4Step)
+				  start(0, Vy, 0, battery);
+			  }
+		  	  break;
+		  case RETRY3:
+			  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
+			  Vx = (4150 - position.x);
+			  W = (0.0 - position.h);
+
+			  if(position.x >= 4000)
+			  {
+				  if(fabs(0.0 - position.h) < 0.7)
 				  {
-					  mode = retry+4;
+					  Inverse_Kinematics(0, 0, 0);
+					  mode = RETRY4;
+				  }
+				  else
+				  {
+					  putar(0, 0, W);
+					  HAL_Delay(150);
+					  putar(0, 0, 0);
+					  HAL_Delay(150);
 				  }
 			  }
-		  	  break;
-		  case retry+4:
-			  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
-			  PID_Kalman(retry5, 3);
-			  if(retry5Step)
+			  else if(position.x < 2200)
 			  {
-				  mode = retry+5;
+				  kanan(1600, 0, 0);
+			  }
+			  else
+			  {
+				  kanan(Vx, 0, 0);
 			  }
 			  break;
-		  case retry+5:
+		  case RETRY4:
 			  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
-			  PID_Kalman(retry6, 3);
-			  if(retry6Step)
+			  Vy = (4600 - position.y);
+			  double gain = sensorData[1] * 200;
+			  if(position.y < 2600)
 			  {
-				  mode = retry+6;
+				  Vy = 1600 + gain;
 			  }
+			  else if(position.y > 4400)
+			  {
+				  Inverse_Kinematics(0, 0, 0);
+				  HAL_Delay(200);
+				  mode = TRIAL;
+			  }
+			  start(0, Vy, 0, battery);
 		  	  break;
-		  case retry+6:
+		  case TRIAL:
+		  	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
+		  	  PID_setDegree(-90.0);
+		  	  if(fabs(-90.0 - position.h) < 3)
+		  	  {
+		  		  mode = TRIAL2;
+		  	  }
+			  break;
+		  case TRIAL2:
+		  	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
+		  	  start(0, 1500, 0, 1);
+		  	  servo_write(55);
+		  	  HAL_Delay(2300);
+		  	  mode = TRIAL3;
+			  break;
+		  case TRIAL3:
 		  	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
 		  	  findtheBall();
-			  if(ballExistence == ballDetected)
+			  if(sensorMEGA[4] == 0)
 			  {
-				  setMotorSpeed(2, 500);
-//				  mode = 0;
+				  Inverse_Kinematics(0, 0, 0);
+				  mode = TRIAL4;
 			  }
-		  	  break;
+			  break;
+		  case TRIAL4:
+			  Vx = 900 * cos(position.h * M_PI/180);
+			  Vy = 900 * sin(position.h * M_PI/180);
+			  baru(Vx, Vy, 0);
+			  HAL_Delay(1000);
+			  mode = TRIAL5;
+			  break;
+		  case TRIAL5:
+		  	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
+		  	  PID_setDegree(90.0);
+		  	  setMotorSpeed(1, 0);
+		  	  setMotorSpeed(2, 0);
+		  	  if(fabs(90.0 - position.h) < 2)
+		  	  {
+		  		  Inverse_Kinematics(0, 0, 0);
+		  		  mode = TRIAL6;
+		  	  }
+			  break;
+		  case TRIAL6:
+		  	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
+		  	  start(0, 2400, 0, 1);
+		  	  servo_write(80);
+		  	  if(camera[3] < 130 || camera[5] < 130 || camera[7] < 130 || camera[9] < 130 || camera[11] < 130)
+		  	  {
+		  		  Inverse_Kinematics(0, 0, 0);
+			  	  mode = TRIAL7;
+		  	  }
+			  break;
+		  case TRIAL7:
+		  	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
+		  	  findSilo();
+			  if((frontLeftDistance > 0 && frontLeftDistance <= 10) || (frontRightDistance > 0 && frontRightDistance <= 10))
+			  {
+				  Inverse_Kinematics(0, 0, 0);
+				  setMotorSpeed(1, -1000);
+				  setMotorSpeed(2, -1000);
+				  HAL_Delay(4000);
+				  mode = TRIAL8;
+			  }
+			  break;
+		  case TRIAL8:
+		  	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
+			  setMotorSpeed(1, 0);
+			  setMotorSpeed(2, 0);
+			  start(0, -1400, 0, battery);
+			  HAL_Delay(2500);
+			  mode = NEXT_STEP;
+			  break;
+		  case NEXT_STEP:
+		  	  PID_setDegree(-90.0);
+		  	  if(fabs(-90.0 - position.h) < 1)
+		  	  {
+		  		  mode = NEXT_STEP2;
+		  	  }
+			  break;
+		  case NEXT_STEP2:
+		  	  start(0, 1300, 0, 1);
+		  	  servo_write(55);
+		  	  HAL_Delay(2500);
+		  	  mode = TRIAL3;
+			  break;
+		  case RUNNINGTEST_1:
+			  gain = sensorData[1] * 200;
+			  Vy = 0.7*(6650 - position.y);
+			  W = (0.0 - position.h);
+
+			  if(position.y >= 6500)
+			  {
+				  if(fabs(0.0 - position.h) < 0.7)
+				  {
+					  Inverse_Kinematics(0, 0, 0);
+					  HAL_Delay(200);
+					  mode = RUNNINGTEST_2;
+				  }
+				  else
+				  {
+					  putar(0, 0, W);
+					  HAL_Delay(150);
+					  putar(0, 0, 0);
+					  HAL_Delay(150);
+				  }
+			  }
+			  else if(position.y < 4200)
+			  {
+				  start(0, 1600 + gain, 0, battery);
+			  }
+			  else
+			  {
+				  start(0, Vy, 0, battery);
+			  }
+			  break;
+		  case RUNNINGTEST_2:
+			  Vx = (4150 - position.x);
+			  W = (0.0 - position.h);
+
+			  if(position.x >= 4000)
+			  {
+				  if(fabs(0.0 - position.h) < 0.7)
+				  {
+					  Inverse_Kinematics(0, 0, 0);
+					  HAL_Delay(200);
+					  mode = RUNNINGTEST_3;
+				  }
+				  else
+				  {
+					  putar(0, 0, W);
+					  HAL_Delay(150);
+					  putar(0, 0, 0);
+					  HAL_Delay(150);
+				  }
+			  }
+			  else if(position.x < 2200)
+			  {
+				  kanan(2000, 0, 0);
+			  }
+			  else
+			  {
+				  kanan(Vx, 0, 0);
+			  }
+			  break;
+		  case RUNNINGTEST_3:
+			  Vy = (11000 - position.y);
+			  gain = sensorData[1] * 200;
+			  if(position.y < 9000)
+			  {
+				  Vy = 1600 + gain;
+			  }
+			  else if(position.y > 9600)
+			  {
+				  Inverse_Kinematics(0, 0, 0);
+				  mode = TRIAL;
+			  }
+			  start(0, Vy, 0, battery);
+			  break;
 		  default:
 			  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
 			  Inverse_Kinematics(0, 0, 0);
@@ -611,7 +824,7 @@ static void MX_TIM1_Init(void)
 
   /* USER CODE END TIM1_Init 1 */
   htim1.Instance = TIM1;
-  htim1.Init.Prescaler = 5;
+  htim1.Init.Prescaler = 33;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim1.Init.Period = 4999;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -725,10 +938,6 @@ static void MX_TIM2_Init(void)
   sConfigOC.Pulse = 0;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
-  {
-    Error_Handler();
-  }
   if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
   {
     Error_Handler();
@@ -761,7 +970,7 @@ static void MX_TIM8_Init(void)
 
   /* USER CODE END TIM8_Init 1 */
   htim8.Instance = TIM8;
-  htim8.Init.Prescaler = 5;
+  htim8.Init.Prescaler = 33;
   htim8.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim8.Init.Period = 4999;
   htim8.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -954,17 +1163,23 @@ static void MX_GPIO_Init(void)
                           |GPIO_PIN_5|GPIO_PIN_12, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14|GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0|GPIO_PIN_1, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : PE2 PE3 PE0 PE1 */
-  GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_0|GPIO_PIN_1;
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14|GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2
+                          |GPIO_PIN_3|GPIO_PIN_4, GPIO_PIN_RESET);
+
+  /*Configure GPIO pins : PE2 PE3 */
+  GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_3;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PE4 PE5 PE6 */
-  GPIO_InitStruct.Pin = GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6;
+  /*Configure GPIO pins : PE4 PE5 PE6 PE0
+                           PE1 */
+  GPIO_InitStruct.Pin = GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_0
+                          |GPIO_PIN_1;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -1008,6 +1223,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
+  /*Configure GPIO pins : PB0 PB1 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
   /*Configure GPIO pins : Button_1_Pin Button_2_Pin Button_3_Pin */
   GPIO_InitStruct.Pin = Button_1_Pin|Button_2_Pin|Button_3_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
@@ -1044,6 +1266,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PD3 PD4 */
+  GPIO_InitStruct.Pin = GPIO_PIN_3|GPIO_PIN_4;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
   /*Configure GPIO pins : EB_1_Pin EB_3_Pin */
@@ -1106,7 +1335,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			HAL_UART_Receive_IT(&huart1, receive + rxIndex, 1);
 		}
 	}
-	else if(huart->Instance == USART2)
+	if(huart->Instance == USART2)
 	{
 		if(receiveCAM[indexCAM] == '\r' || receiveCAM[indexCAM] == '\n')
 		{
@@ -1128,26 +1357,26 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			HAL_UART_Receive_IT(&huart2, receiveCAM + indexCAM, 1);
 		}
 	}
-	else if(huart->Instance == USART3)
+	if(huart->Instance == USART3)
 	{
-		if(receivePROX[indexPROX] == '\r' || receivePROX[indexPROX] == '\n')
+		if(receiveMEGA[indexMEGA] == '\r' || receiveMEGA[indexMEGA] == '\n')
 		{
-			receivePROX[indexPROX] = '\0';
-			char *token = strtok((char *)receivePROX, ",");
-			dataindexPROX = 0;
+			receiveMEGA[indexMEGA] = '\0';
+			char *token = strtok((char *)receiveMEGA, ",");
+			dataindexMEGA = 0;
 			while(token != NULL)
 			{
-				proximity[dataindexPROX++] = atoi(token);
+				sensorMEGA[dataindexMEGA++] = atoi(token);
 				token = strtok(NULL, ",");
 			}
-			memset(receivePROX, 0, sizeof(receivePROX));
-			indexPROX = 0;
-			HAL_UART_Receive_IT(&huart3, receivePROX, 1);
+			memset(receiveMEGA, 0, sizeof(receiveMEGA));
+			indexMEGA = 0;
+			HAL_UART_Receive_IT(&huart3, receiveMEGA, 1);
 		}
 		else
 		{
-			indexPROX++;
-			HAL_UART_Receive_IT(&huart3, receivePROX + indexPROX, 1);
+			indexMEGA++;
+			HAL_UART_Receive_IT(&huart3, receiveMEGA + indexMEGA, 1);
 		}
 	}
 }

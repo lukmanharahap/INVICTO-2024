@@ -38,7 +38,7 @@ typedef struct
 double PID_for_tuning(double setpoint, double measurement, double KP, double KI, double KD);
 double PID_for_tuningH(double setpoint, double measurement, double KP, double KI, double KD);
 double PID_controller(double setpoint, double actual_position, uint8_t pidMode);
-double PID_controllerH(double setpoint, double actual_position);
+double PID_controllerH(double setpoint, double actual_position, uint8_t pidMode);
 void PIDController_Init(PIDController *pid);
 double PIDController_Update(PIDController *pid, double setpoint, double measurement);
 

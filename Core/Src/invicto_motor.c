@@ -69,15 +69,52 @@ void Inverse_Kinematics(int Vx, int Vy, int W)
      double M3 = -sin(5 * M_PI_4) * Vx + cos(5 * M_PI_4) * Vy - R * W;
      double M4 = -sin(7 * M_PI_4) * Vx + cos(7 * M_PI_4) * Vy - R * W;
 
-     double V1 = (M1 > 550 || M1 < -550) ? fmin(fmax(M1, -2600), 2600) : ((M1 < -0) ? -550 : ((M1 > 0) ? 550 : 0));
-     double V2 = (M2 > 550 || M2 < -550) ? fmin(fmax(M2, -2600), 2600) : ((M2 < -0) ? -550 : ((M2 > 0) ? 550 : 0));
-     double V3 = (M3 > 550 || M3 < -550) ? fmin(fmax(M3, -2600), 2600) : ((M3 < -0) ? -550 : ((M3 > 0) ? 550 : 0));
-     double V4 = (M4 > 550 || M4 < -550) ? fmin(fmax(M4, -2600), 2600) : ((M4 < -0) ? -550 : ((M4 > 0) ? 550 : 0));
+     double V1 = (M1 > 550 || M1 < -550) ? fmin(fmax(M1, -2600), 2600) : ((M1 < 0) ? -550 : ((M1 > 0) ? 550 : 0));
+     double V2 = (M2 > 550 || M2 < -550) ? fmin(fmax(M2, -2600), 2600) : ((M2 < 0) ? -550 : ((M2 > 0) ? 550 : 0));
+     double V3 = (M3 > 550 || M3 < -550) ? fmin(fmax(M3, -2600), 2600) : ((M3 < 0) ? -550 : ((M3 > 0) ? 550 : 0));
+     double V4 = (M4 > 550 || M4 < -550) ? fmin(fmax(M4, -2600), 2600) : ((M4 < 0) ? -550 : ((M4 > 0) ? 550 : 0));
 
      setMotorSpeed(6, V1);
      setMotorSpeed(8, V2);
      setMotorSpeed(4, V3);
      setMotorSpeed(5, V4);
+}
+
+void baru(double Vx, double Vy, double W)
+{
+    double R = 7.6; // Radius or distance from the center to the wheel, in centimeters
+    double wheelMaxSpeed = 2600; // Max speed for each wheel
+
+    // Calculate the raw motor speeds based on inverse kinematics
+    double M1 = -sin(M_PI_4) * Vx + cos(M_PI_4) * Vy - R * W;
+    double M2 = -sin(3 * M_PI_4) * Vx + cos(3 * M_PI_4) * Vy - R * W;
+    double M3 = -sin(5 * M_PI_4) * Vx + cos(5 * M_PI_4) * Vy - R * W;
+    double M4 = -sin(7 * M_PI_4) * Vx + cos(7 * M_PI_4) * Vy - R * W;
+
+    // Find the maximum absolute value among the motor speeds
+    double maxM = fmax(fabs(M1), fmax(fabs(M2), fmax(fabs(M3), fabs(M4))));
+
+    // Scale the motor speeds to fit within the allowed range if necessary
+    if (maxM > wheelMaxSpeed) {
+        double scale = wheelMaxSpeed / maxM;
+        M1 *= scale;
+        M2 *= scale;
+        M3 *= scale;
+        M4 *= scale;
+    }
+
+    // Apply a minimum threshold for movement to overcome static friction
+    double minThreshold = 500;
+    double V1 = (fabs(M1) > minThreshold) ? M1 : (M1 < 0) ? -minThreshold : ((M1 > 0) ? minThreshold : 0);
+    double V2 = (fabs(M2) > minThreshold) ? M2 : (M2 < 0) ? -minThreshold : ((M2 > 0) ? minThreshold : 0);
+    double V3 = (fabs(M3) > minThreshold) ? M3 : (M3 < 0) ? -minThreshold : ((M3 > 0) ? minThreshold : 0);
+    double V4 = (fabs(M4) > minThreshold) ? M4 : (M4 < 0) ? -minThreshold : ((M4 > 0) ? minThreshold : 0);
+
+    // Set the motor speeds
+    setMotorSpeed(6, (int)V1);
+    setMotorSpeed(8, (int)V2);
+    setMotorSpeed(4, (int)V3);
+    setMotorSpeed(5, (int)V4);
 }
 
 void coba(int Vx, int Vy, int W)
@@ -111,10 +148,30 @@ void putar(int Vx, int Vy, int W)
      double M3 = -sin(5 * M_PI_4) * Vx + cos(5 * M_PI_4) * Vy - R * W;
      double M4 = -sin(7 * M_PI_4) * Vx + cos(7 * M_PI_4) * Vy - R * W;
 
-     double V1 = (M1 > 450 || M1 < -450) ? fmin(fmax(M1, -2600), 2600) : ((M1 < -0) ? -450 : ((M1 > 0) ? 450 : 0));
-     double V2 = (M2 > 450 || M2 < -450) ? fmin(fmax(M2, -2600), 2600) : ((M2 < -0) ? -450 : ((M2 > 0) ? 450 : 0));
-     double V3 = (M3 > 450 || M3 < -450) ? fmin(fmax(M3, -2600), 2600) : ((M3 < -0) ? -450 : ((M3 > 0) ? 450 : 0));
-     double V4 = (M4 > 450 || M4 < -450) ? fmin(fmax(M4, -2600), 2600) : ((M4 < -0) ? -450 : ((M4 > 0) ? 450 : 0));
+     double V1 = (M1 > 400 || M1 < -400) ? fmin(fmax(M1, -2600), 2600) : ((M1 < -0) ? -400 : ((M1 > 0) ? 400 : 0));
+     double V2 = (M2 > 400 || M2 < -400) ? fmin(fmax(M2, -2600), 2600) : ((M2 < -0) ? -400 : ((M2 > 0) ? 400 : 0));
+     double V3 = (M3 > 400 || M3 < -400) ? fmin(fmax(M3, -2600), 2600) : ((M3 < -0) ? -400 : ((M3 > 0) ? 400 : 0));
+     double V4 = (M4 > 400 || M4 < -400) ? fmin(fmax(M4, -2600), 2600) : ((M4 < -0) ? -400 : ((M4 > 0) ? 400 : 0));
+
+     setMotorSpeed(6, V1);
+     setMotorSpeed(8, V2);
+     setMotorSpeed(4, V3);
+     setMotorSpeed(5, V4);
+}
+
+void kanan(int Vx, int Vy, int W)
+{
+     double R = 7.6;
+
+     double M1 = -sin(1 * M_PI_4) * Vx + cos(1 * M_PI_4) * Vy - R * W;
+     double M2 = -sin(3 * M_PI_4) * Vx + cos(3 * M_PI_4) * Vy - R * W;
+     double M3 = -sin(5 * M_PI_4) * Vx + cos(5 * M_PI_4) * Vy - R * W;
+     double M4 = (-sin(7 * M_PI_4) * Vx + cos(7 * M_PI_4) * Vy - R * W)*1.056;
+
+     double V1 = (M1 > 550 || M1 < -550) ? fmin(fmax(M1, -2600), 2600) : ((M1 < 0) ? -550 : ((M1 > 0) ? 550 : 0));
+     double V2 = (M2 > 550 || M2 < -550) ? fmin(fmax(M2, -2600), 2600) : ((M2 < 0) ? -550 : ((M2 > 0) ? 550 : 0));
+     double V3 = (M3 > 550 || M3 < -550) ? fmin(fmax(M3, -2600), 2600) : ((M3 < 0) ? -550 : ((M3 > 0) ? 550 : 0));
+     double V4 = (M4 > 550 || M4 < -550) ? fmin(fmax(M4, -2600), 2600) : ((M4 < 0) ? -550 : ((M4 > 0) ? 550 : 0));
 
      setMotorSpeed(6, V1);
      setMotorSpeed(8, V2);
@@ -129,10 +186,10 @@ void start(int Vx, int Vy, int W, uint8_t battery)
 
     switch (battery)
     {
-		case 1: // 24.3 < x < 24.6
+		case 1: // 24.3 < x < 24.7
 			M1 = (-sin(1 * M_PI_4) * Vx + cos(1 * M_PI_4) * Vy - R * W);
-			M2 = (-sin(3 * M_PI_4) * Vx + cos(3 * M_PI_4) * Vy - R * W)*1.1;
-			M3 = (-sin(5 * M_PI_4) * Vx + cos(5 * M_PI_4) * Vy - R * W)*1.1;
+			M2 = (-sin(3 * M_PI_4) * Vx + cos(3 * M_PI_4) * Vy - R * W)*1.057;
+			M3 = (-sin(5 * M_PI_4) * Vx + cos(5 * M_PI_4) * Vy - R * W)*1.058;
 			M4 = (-sin(7 * M_PI_4) * Vx + cos(7 * M_PI_4) * Vy - R * W);
 			break;
     	case 2: // > 24.3

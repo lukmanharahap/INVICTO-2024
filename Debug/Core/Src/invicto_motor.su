@@ -1,7 +1,9 @@
 ../Core/Src/invicto_motor.c:20:6:motorDirection	24	static
 ../Core/Src/invicto_motor.c:44:6:setMotorSpeed	40	static
 ../Core/Src/invicto_motor.c:63:6:Inverse_Kinematics	104	static
-../Core/Src/invicto_motor.c:83:6:coba	224	static
-../Core/Src/invicto_motor.c:105:6:putar	104	static
-../Core/Src/invicto_motor.c:125:6:start	104	static
-../Core/Src/invicto_motor.c:181:6:nanjak	104	static
+../Core/Src/invicto_motor.c:83:6:baru	240	static
+../Core/Src/invicto_motor.c:120:6:coba	224	static
+../Core/Src/invicto_motor.c:142:6:putar	104	static
+../Core/Src/invicto_motor.c:162:6:kanan	104	static
+../Core/Src/invicto_motor.c:182:6:start	104	static
+../Core/Src/invicto_motor.c:238:6:nanjak	104	static

@@ -28,8 +28,8 @@ double xLocalIN = 0.0, yLocalIN = 0.0;
 double headingIN = 0.0;
 /* END */
 
-extern int camera[5];
-extern int proximity[2];
+extern int camera[13];
+extern int sensorMEGA[4];
 
 robotPosition odometry()
 {
@@ -141,16 +141,16 @@ double getVelocity()
 
 // Process noise covariance matrix (Q)
 const double Q[STATE_DIM][STATE_DIM] = {
-    {0.1, 0, 0},
-    {0, 0.1, 0},
-    {0, 0, 0.1}
+    {0.1, 0.0, 0.0},
+    {0.0, 0.1, 0.0},
+    {0.0, 0.0, 0.1}
 };
 
 // Measurement noise covariance matrix (R)
 const double R[MEASUREMENT_DIM][MEASUREMENT_DIM] = {
-    {0.1, 0, 0},
-    {0, 0.1, 0},
-    {0, 0, 0.1}
+    {0.1, 0.0, 0.0},
+    {0.0, 0.1, 0.0},
+    {0.0, 0.0, 0.1}
 };
 
 // State transition function f
@@ -183,9 +183,9 @@ EKF extendedKalmanFilter()
 	EKF currentPosition;
 	robotPosition position = odometry();
 	double P[STATE_DIM][STATE_DIM] = {
-		{1, 0, 0},
-		{0, 1, 0},
-		{0, 0, 1}};
+		{1.0, 0.0, 0.0},
+		{0.0, 1.0, 0.0},
+		{0.0, 0.0, 1.0}};
 
     // Prediction step
 	StateVector X = {position.x_local, position.y_local, 0.0};
@@ -239,11 +239,25 @@ void displayKalman(EKF position)
 	lcd_set_cursor(0, 0);
 	sprintf(buffer, "X:%.2f", position.x);
 	lcd_write_string(buffer);
+
 	lcd_set_cursor(1, 0);
 	sprintf(buffer, "Y:%.2f", position.y);
 	lcd_write_string(buffer);
+
 	lcd_set_cursor(2, 0);
 	sprintf(buffer, "Yaw:%.2f", position.h);
+	lcd_write_string(buffer);
+
+	lcd_set_cursor(3, 0);
+	sprintf(buffer, "FL:%i", sensorMEGA[0]);
+	lcd_write_string(buffer);
+
+	lcd_set_cursor(2, 10);
+	sprintf(buffer, "FR:%i", sensorMEGA[1]);
+	lcd_write_string(buffer);
+
+	lcd_set_cursor(3, 10);
+	sprintf(buffer, "L:%i", sensorMEGA[2]);
 	lcd_write_string(buffer);
 }
 
@@ -285,7 +299,11 @@ void cek(EKF position)
 	lcd_write_string(buffer);
 
 	lcd_set_cursor(3, 0);
-	sprintf(buffer, "%d", proximity[0]);
+	sprintf(buffer, "%d", camera[3]);
+	lcd_write_string(buffer);
+
+	lcd_set_cursor(0, 10);
+	sprintf(buffer, "%d", camera[4]);
 	lcd_write_string(buffer);
 
 	lcd_set_cursor(1, 10);

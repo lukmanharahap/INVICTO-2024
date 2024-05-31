@@ -68,8 +68,16 @@ double PID_controller(double setpoint, double actual_position, uint8_t pidMode)
 	switch(pidMode)
 	{
 	case 1:
-		Kp = 0.5, Ki = 0.1, Kd = 0.0;
-		tau = 0.1;
+		if(setpoint < 1000)
+		{
+			Kp = 1.5, Ki = 0.0, Kd = 0.0;
+			tau = 0.1;
+		}
+		else
+		{
+			Kp = 0.2, Ki = 0.0, Kd = 0.0;
+			tau = 0.1;
+		}
 
 //		Kp = 1000/fabs(setpoint - actual_position), Ki = 0.0, Kd = 0.0;
 //		tau = 0.1;
@@ -87,39 +95,39 @@ double PID_controller(double setpoint, double actual_position, uint8_t pidMode)
 	case 2:
 		if(setpoint > 0 && setpoint < 120)
 		{
-			Kp = 30, Ki = 0.2, Kd = 0.0;
+			Kp = 30, Ki = 0.0, Kd = 0.0;
 			tau = 0.1;
 		}
 		else if(setpoint >= 120 && setpoint < 500)
 		{
-			Kp = 22, Ki = 0.2, Kd = 0.0;
+			Kp = 22, Ki = 0.0, Kd = 0.0;
 			tau = 0.1;
 		}
 		else if(setpoint >= 500 && setpoint < 1000)
 		{
-			Kp = 15, Ki = 0.2, Kd = 0.0;
+			Kp = 15, Ki = 0.0, Kd = 0.0;
 			tau = 0.1;
 		}
 		else if(setpoint >= 1000 && setpoint < 2500)
 		{
-			Kp = 2.0, Ki = 0.15, Kd = 0.0;
+			Kp = 1.5, Ki = 0.0, Kd = 0.0;
 			tau = 0.1;
 		}
 		else
 		{
-			Kp = 0.8, Ki = 0.1, Kd = 0.0;
+			Kp = 0.6, Ki = 0.0, Kd = 0.0;
 			tau = 0.1;
 		}
 		break;
 	case 3:
-		if(setpoint > 0 && setpoint < 100)
+		if(setpoint >= 0 && setpoint < 100)
 		{
 			Kp = 40.0, Ki = 0.0, Kd = 0.0;
 			tau = 0.1;
 		}
 		else if(setpoint >= 100 && setpoint < 250)
 		{
-			Kp = 14.0, Ki = 0.0, Kd = 0.0;
+			Kp = 15.0, Ki = 0.0, Kd = 0.0;
 			tau = 0.1;
 		}
 		else if(setpoint >= 250 && setpoint < 750)
@@ -156,7 +164,11 @@ double PID_controller(double setpoint, double actual_position, uint8_t pidMode)
 		}
 		break;
 	case 5:
-		Kp = 2.0, Ki = 0.0, Kd = 0.0;
+		Kp = 2.0, Ki = 0.1, Kd = 0.0;
+		tau = 0.1;
+		break;
+	case 6:
+		Kp = 0.4, Ki = 0.0, Kd = 0.0;
 		tau = 0.1;
 		break;
 	}
@@ -179,26 +191,60 @@ double PID_controller(double setpoint, double actual_position, uint8_t pidMode)
     return output;
 }
 
-double PID_controllerH(double setpoint, double actual_position)
+double PID_controllerH(double setpoint, double actual_position, uint8_t pidMode)
 {
 	double error, P;
-	if(setpoint >= 45 && setpoint < 90)
+	switch(pidMode)
 	{
-		Kp = 1.1;
+	case 1:
+		if(setpoint >= 30 && setpoint < 45){Kp = 0.43;}
+		else if(setpoint >= 45 && setpoint < 60){Kp = 0.33;}
+		else if(setpoint >= 60 && setpoint < 75){Kp = 0.28;}
+		else if(setpoint >= 75 && setpoint < 90){Kp = 0.24;}
+		else if(setpoint >= 90 && setpoint < 105){Kp = 0.2;}
+		else if(setpoint >= 105 && setpoint < 120){Kp = 0.18;}
+		else if(setpoint >= 120 && setpoint < 135){Kp = 0.14;}
+		else if(setpoint >= 135 && setpoint < 150){Kp = 0.12;}
+		else if(setpoint >= 150 && setpoint < 180){Kp = 0.1;}
+		else{Kp = 0.56;}
+		break;
+	case 2:
+		if(setpoint >= 30 && setpoint < 45){Kp = 0.83;}
+		else if(setpoint >= 45 && setpoint < 60){Kp = 0.75;}
+		else if(setpoint >= 60 && setpoint < 75){Kp = 0.68;}
+		else if(setpoint >= 75 && setpoint < 90){Kp = 0.6;}
+		else if(setpoint >= 90 && setpoint < 105){Kp = 0.52;}
+		else if(setpoint >= 105 && setpoint < 120){Kp = 0.45;}
+		else if(setpoint >= 120 && setpoint < 135){Kp = 0.4;}
+		else if(setpoint >= 135 && setpoint < 150){Kp = 0.34;}
+		else if(setpoint >= 150 && setpoint < 180){Kp = 0.3;}
+		else{Kp = 1.0;}
+		break;
+	case 3:
+		if(setpoint >= 30 && setpoint < 45){Kp = 0.43;}
+		else if(setpoint >= 45 && setpoint < 60){Kp = 0.35;}
+		else if(setpoint >= 60 && setpoint < 75){Kp = 0.3;}
+		else if(setpoint >= 75 && setpoint < 90){Kp = 0.25;}
+		else if(setpoint >= 90 && setpoint < 105){Kp = 0.19;}
+		else if(setpoint >= 105 && setpoint < 120){Kp = 0.15;}
+		else if(setpoint >= 120 && setpoint < 135){Kp = 0.11;}
+		else if(setpoint >= 135 && setpoint < 150){Kp = 0.1;}
+		else if(setpoint >= 150 && setpoint < 180){Kp = 0.08;}
+		else{Kp = 0.6;}
+		break;
+	case 4:
+		if(setpoint >= 30 && setpoint < 45){Kp = 0.43;}
+		else if(setpoint >= 45 && setpoint < 60){Kp = 0.35;}
+		else if(setpoint >= 60 && setpoint < 75){Kp = 0.3;}
+		else if(setpoint >= 75 && setpoint < 90){Kp = 0.25;}
+		else if(setpoint >= 90 && setpoint < 105){Kp = 0.19;}
+		else if(setpoint >= 105 && setpoint < 120){Kp = 0.15;}
+		else if(setpoint >= 120 && setpoint < 135){Kp = 0.11;}
+		else if(setpoint >= 135 && setpoint < 150){Kp = 0.1;}
+		else if(setpoint >= 150 && setpoint < 180){Kp = 0.08;}
+		else{Kp = 0.6;}
+		break;
 	}
-	else if(setpoint >= 90 && setpoint < 135)
-	{
-		Kp = 0.7;
-	}
-	else if(setpoint >= 135)
-	{
-		Kp = 0.8;
-	}
-	else
-	{
-		Kp = 1.7;
-	}
-//	Kp = 550/(7.6 * fabs(setpoint - actual_position));
 
 	if((setpoint - actual_position) > 180)
 	{
