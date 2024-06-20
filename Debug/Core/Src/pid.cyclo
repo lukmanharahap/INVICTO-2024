@@ -1,6 +1,2 @@
-../Core/Src/pid.c:11:8:PID_for_tuning	1
-../Core/Src/pid.c:32:8:PID_for_tuningH	3
-../Core/Src/pid.c:66:8:PID_controller	26
-../Core/Src/pid.c:194:8:PID_controllerH	79
-../Core/Src/pid.c:268:6:PIDController_Init	1
-../Core/Src/pid.c:281:8:PIDController_Update	5
+../Core/Src/pid.c:7:8:PID_controller	5
+../Core/Src/pid.c:44:8:PID_controllerH	7

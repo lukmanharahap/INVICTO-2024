@@ -161,8 +161,8 @@ StateVector stateTransition(StateVector X)
 //    X_next.x = X.x + v * cos(X.theta) * dt + 0.5 * ax * pow(dt, 2) * cos(X.theta);
 //    X_next.y = X.y + v * sin(X.theta) * dt + 0.5 * ay * pow(dt, 2) * sin(X.theta);
 //    X_next.theta = X.theta + heading;
-    X_next.x = X.x + position.x_local;
-    X_next.y = X.y + position.y_local;
+    X_next.x = X.x + position.x_global;
+    X_next.y = X.y + position.y_global;
     X_next.theta = X.theta + position.h;
     return X_next;
 }
@@ -188,7 +188,7 @@ EKF extendedKalmanFilter()
 		{0.0, 0.0, 1.0}};
 
     // Prediction step
-	StateVector X = {position.x_local, position.y_local, 0.0};
+	StateVector X = {position.x_global, position.y_global, 0.0};
     StateVector X_pred = stateTransition(X);
     double P_pred[STATE_DIM][STATE_DIM] = {
         {P[0][0] + Q[0][0], P[0][1], P[0][2]},
@@ -197,7 +197,7 @@ EKF extendedKalmanFilter()
     };
 
     // Update step
-	MeasurementVector Z = {position.x_in_local, position.y_in_local, 0.0};
+	MeasurementVector Z = {position.x_in_global, position.y_in_global, 0.0};
     MeasurementVector Z_pred = measurementFunction(X_pred);
     double Y[MEASUREMENT_DIM] = {Z.x - Z_pred.x, Z.y - Z_pred.y, Z.theta - Z_pred.theta};
     double S[MEASUREMENT_DIM][MEASUREMENT_DIM] = {

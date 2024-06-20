@@ -28,6 +28,7 @@ typedef struct
 {
     double x_global;
     double y_global;
+    double h;
 
     double x_local;
 	double y_local;
@@ -39,7 +40,6 @@ typedef struct
     double y_in_local;
 
 	double h_en;
-    double h;
 } robotPosition;
 
 // State vector [x, y, theta]
