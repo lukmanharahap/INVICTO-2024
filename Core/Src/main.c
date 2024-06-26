@@ -29,14 +29,22 @@
 typedef enum
 {
 	VOID,
-	STEP1,
-	STEP2,
-	STEP3,
-	STEP4,
-	MAJU,
-	FIND_BALL,
-	FACING_SILO,
-	FIND_SILO,
+	BLUE_STEP1,
+	BLUE_STEP2,
+	BLUE_STEP3,
+	BLUE_STEP4,
+	BLUE_STORAGE,
+	BLUE_FIND_BALL,
+	BLUE_FACING_SILO,
+	BLUE_FIND_SILO,
+	RED_STEP1,
+	RED_STEP2,
+	RED_STEP3,
+	RED_STEP4,
+	RED_STORAGE,
+	RED_FIND_BALL,
+	RED_FACING_SILO,
+	RED_FIND_SILO,
 	TES
 } movingState;
 /* USER CODE END PTD */
@@ -70,7 +78,7 @@ volatile int counterIN1 = 0, counterIN2 = 0, counterIN3 = 0, counterIN4 = 0;
 uint8_t receive[50];
 uint32_t rxIndex = 0;
 uint32_t dataIndex = 0;
-double sensorData[2];
+double sensorData[3];
 
 /*   CAMERA   */
 /*
@@ -172,8 +180,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	// BUTTON
 	else if((GPIO_Pin == Button_1_Pin) && (HAL_GPIO_ReadPin(Button_1_GPIO_Port, Button_1_Pin) == GPIO_PIN_RESET))
 	{
-		mode = mode + STEP1;
-		if(mode > STEP1)
+		mode = mode + BLUE_STEP1;
+		if(mode > BLUE_STEP1)
 		{
 			mode = VOID;
 		}
@@ -181,8 +189,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	}
 	else if((GPIO_Pin == Button_2_Pin) && (HAL_GPIO_ReadPin(Button_2_GPIO_Port, Button_2_Pin) == GPIO_PIN_RESET))
 	{
-		mode = mode + STEP1;
-		if(mode > STEP1)
+		mode = mode + BLUE_STEP1;
+		if(mode > BLUE_STEP1)
 		{
 			mode = VOID;
 		}
@@ -190,8 +198,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	}
 	else if((GPIO_Pin == Button_3_Pin) && (HAL_GPIO_ReadPin(Button_3_GPIO_Port, Button_3_Pin) == GPIO_PIN_RESET))
 	{
-		mode = mode + MAJU;
-		if(mode > MAJU)
+		mode = mode + BLUE_STORAGE;
+		if(mode > BLUE_STORAGE)
 		{
 			mode = VOID;
 		}
@@ -199,8 +207,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	}
 	else if((GPIO_Pin == Button_4_Pin) && (HAL_GPIO_ReadPin(Button_4_GPIO_Port, Button_4_Pin) == GPIO_PIN_RESET))
 	{
-		mode = mode + MAJU;
-		if(mode > MAJU)
+		mode = mode + BLUE_STORAGE;
+		if(mode > BLUE_STORAGE)
 		{
 			mode = VOID;
 		}
@@ -245,31 +253,88 @@ int main(void)
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
-  HAL_TIM_PWM_Start_IT(&htim1, TIM_CHANNEL_1);
-  HAL_TIM_PWM_Start_IT(&htim1, TIM_CHANNEL_2);
-  HAL_TIM_PWM_Start_IT(&htim1, TIM_CHANNEL_3);
-  HAL_TIM_PWM_Start_IT(&htim1, TIM_CHANNEL_4);
-  HAL_TIM_PWM_Start_IT(&htim8, TIM_CHANNEL_1);
-  HAL_TIM_PWM_Start_IT(&htim8, TIM_CHANNEL_2);
-  HAL_TIM_PWM_Start_IT(&htim8, TIM_CHANNEL_3);
-  HAL_TIM_PWM_Start_IT(&htim8, TIM_CHANNEL_4);
-  HAL_TIM_PWM_Start_IT(&htim2, TIM_CHANNEL_3);
-  HAL_TIM_PWM_Start_IT(&htim2, TIM_CHANNEL_4);
 
-  HAL_UART_Receive_IT(&huart1, receive, 1);
-  HAL_UART_Receive_IT(&huart2, receiveCAM, 1);
-  HAL_UART_Receive_IT(&huart3, receiveMEGA, 1);
+  if(HAL_TIM_PWM_Start_IT(&htim1, TIM_CHANNEL_1) != HAL_OK)
+  {
+	  Error_Handler();
+  }
+  if(HAL_TIM_PWM_Start_IT(&htim1, TIM_CHANNEL_2) != HAL_OK)
+  {
+	  Error_Handler();
+  }
+  if(HAL_TIM_PWM_Start_IT(&htim1, TIM_CHANNEL_3) != HAL_OK)
+  {
+	  Error_Handler();
+  }
+  if(HAL_TIM_PWM_Start_IT(&htim1, TIM_CHANNEL_4) != HAL_OK)
+  {
+	  Error_Handler();
+  }
+  if(HAL_TIM_PWM_Start_IT(&htim8, TIM_CHANNEL_1) != HAL_OK)
+  {
+	  Error_Handler();
+  }
+  if(HAL_TIM_PWM_Start_IT(&htim8, TIM_CHANNEL_2) != HAL_OK)
+  {
+	  Error_Handler();
+  }
+  if(HAL_TIM_PWM_Start_IT(&htim8, TIM_CHANNEL_3) != HAL_OK)
+  {
+	  Error_Handler();
+  }
+  if(HAL_TIM_PWM_Start_IT(&htim8, TIM_CHANNEL_4) != HAL_OK)
+  {
+	  Error_Handler();
+  }
+  if(HAL_TIM_PWM_Start_IT(&htim2, TIM_CHANNEL_3) != HAL_OK)
+  {
+	  Error_Handler();
+  }
+  if(HAL_TIM_PWM_Start_IT(&htim2, TIM_CHANNEL_4) != HAL_OK)
+  {
+	  Error_Handler();
+  }
+
+  if(HAL_UART_Receive_IT(&huart1, receive, 1) != HAL_OK)
+  {
+	  Error_Handler();
+  }
+  if(HAL_UART_Receive_IT(&huart2, receiveCAM, 1) != HAL_OK)
+  {
+	  Error_Handler();
+  }
+  if(HAL_UART_Receive_IT(&huart3, receiveMEGA, 1) != HAL_OK)
+  {
+	  Error_Handler();
+  }
 
   initializeSilos();
 
-  robotPosition step1 = {0.0, 6700.0, 0.0};
-  robotPosition step2 = {4200.0, 6700.0, 0.0};
-  robotPosition step3 = {4200.0, 9500.0, 0.0};
-  robotPosition step4 = {4200.0, 9500.0, -90.0};
-  robotPosition tes = {0.0, 2000.0, 0.0};
-  robotPosition maju = {-2600.0, 0.0, -90.0};
-  robotPosition initialPos = {0.0, 0.0, 90.0};
-  robotPosition findBall = {-500.0, 0.0, -90.0};
+  EKF blue_step1 = {0.0, 6700.0, 0.0};
+  EKF blue_step2 = {4200.0, 6700.0, 0.0};
+  EKF blue_step3 = {4200.0, 9500.0, 0.0};
+  EKF blue_step4 = {4200.0, 9500.0, -90.0};
+  EKF blue_storage = {-2600.0, 0.0, 0.0};
+  EKF blue_facing_silo_EKF = {0.0, 0.0, 90.0};
+  robotPosition blue_facing_silo = {0.0, 0.0, 90.0};
+
+  EKF red_step1 = {0.0, 6700.0, 0.0};
+  EKF red_step2 = {-3500.0, 6200.0, 0.0};
+  EKF red_step3 = {-3500.0, 9500.0, 0.0};
+  EKF red_step4 = {-3500.0, 9500.0, 90.0};
+  EKF red_storage = {-900.0, 0.0, 0.0};
+  EKF red_facing_silo_EKF = {0.0, 0.0, 90.0};
+  robotPosition red_facing_silo = {0.0, 0.0, 90.0};
+
+  EKF coba[4] = {
+		  {0.0, 6400.0, 0.0},
+		  {3500.0, 6400.0, 0.0},
+		  {3500.0, 9500.0, 0.0},
+		  {3500.0, 9500.0, -90.0}
+  };
+  EKF tes = {0.0, 2000.0, 0.0};
+  robotPosition nyoba_internal = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 6700.0};
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -277,97 +342,179 @@ int main(void)
   while (1)
   {
 	  lcd_init();
-	  robotPosition position = odometry();
-	  displayPosition(position, global);
+	  EKF position = extendedKalmanFilter();
+	  robotPosition positionExtenal = odometry();
 //	  displayKalman(position);
+	  displayPosition(positionExtenal, in_global);
 //	  displayCounter();
 
 	  int frontLeftDistance = sensorMEGA[0];
 	  int frontRightDistance = sensorMEGA[1];
 	  int tolerance = 400;
 
-	  bool step1_check = atTargetPosition(step1, position, tolerance, 1);
-	  bool step2_check = atTargetPosition(step2, position, tolerance, 1);
-	  bool step3_check = atTargetPosition(step3, position, tolerance, 1);
-	  bool step4_check = atTargetPosition(step4, position, tolerance, 1);
-	  bool maju_check = atTargetPosition(maju, position, tolerance+200, 1);
-	  bool initialPos_check = atTargetPosition(initialPos, position, tolerance+200, 1);
+	  bool blue_step1_check = atTargetPosition(blue_step1, position, tolerance, 1);
+	  bool blue_step2_check = atTargetPosition(blue_step2, position, tolerance, 1);
+	  bool blue_step3_check = atTargetPosition(blue_step3, position, tolerance, 1);
+	  bool blue_step4_check = atTargetPosition(blue_step4, position, tolerance, 1);
+	  bool blue_storage_check = atTargetPosition(blue_storage, position, tolerance+500, 1);
+
+	  bool blue_facing_silo_check = atTargetExternal(blue_facing_silo, positionExtenal, tolerance+500, 1);
+
+	  bool red_step1_check = atTargetPosition(red_step1, position, tolerance, 1);
+	  bool red_step2_check = atTargetPosition(red_step2, position, tolerance, 1);
+	  bool red_step3_check = atTargetPosition(red_step3, position, tolerance, 1);
+	  bool red_step4_check = atTargetPosition(red_step4, position, tolerance, 1);
+	  bool red_storage_check = atTargetPosition(red_storage, position, tolerance+500, 1);
+	  bool red_facing_silo_check = atTargetExternal(red_facing_silo, positionExtenal, tolerance+500, 1);
 
 	  switch(mode)
 	  {
-	  case STEP1:
-		  PID_KFtocoordinate(step1, 1, 0.8);
-		  if(step1_check)
+	  case BLUE_STEP1:
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
+		  PID_Internal(nyoba_internal, 1.3, 0.0, 0.0, 2.0, 0.8, 4000);
+//		  PID_moveToCoordinate(coba, 1.0, 0.0, 0.0, 1.0, tolerance, 3500);
+//		  PID_KFtocoordinate(blue_step1, 1.3, 0.0, 0.0, 2.5, 0.8, 4000);
+//		  if(blue_step1_check)
+//		  {
+//			  mode = BLUE_STEP2;
+//		  }
+		  break;
+	  case BLUE_STEP2:
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
+		  PID_KFtocoordinate(blue_step2, 2.4, 0.0, 0.0, 2.5, 0.8, 4000);
+		  if(blue_step2_check)
 		  {
-			  mode = STEP2;
+			  mode = BLUE_STEP3;
 		  }
 		  break;
-	  case STEP2:
-		  PID_KFtocoordinate(step2, 1, 0.8);
-		  if(step2_check)
+	  case BLUE_STEP3:
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
+		  PID_KFtocoordinate(blue_step3, 1.8, 0.0, 0.0, 2.0, 0.8, 5500);
+		  if(blue_step3_check)
 		  {
-			  mode = STEP3;
+			  mode = BLUE_STEP4;
 		  }
 		  break;
-	  case STEP3:
-		  PID_KFtocoordinate(step3, 1, 0.8);
-		  if(step3_check)
+	  case BLUE_STEP4:
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
+		  PID_KFtocoordinate(blue_step4, 2.0, 0.0, 0.0, 1.0, 0.8, 3000);
+		  if(blue_step4_check)
 		  {
-			  mode = STEP4;
+			  mode = VOID;
 		  }
 		  break;
-	  case STEP4:
-		  PID_KFtocoordinate(step4, 1, 0.8);
-		  if(step4_check)
-		  {
-			  mode = FIND_BALL;
-		  }
-		  break;
-	  case MAJU:
+	  case BLUE_STORAGE:
 		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
 		  setMotorSpeed(1, 0);
 		  setMotorSpeed(2, 0);
 		  setMotorSpeed(7, 0);
-		  PID_KFtocoordinate(maju, 1, 0.5);
-		  if(maju_check)
+		  PID_KFtocoordinate(blue_storage, 1.3, 0.0, 0.0, 1.4, 0.6, 3000);
+		  if(blue_storage_check)
 		  {
-			  mode = FIND_BALL;
+			  mode = BLUE_FIND_BALL;
 		  }
 		  break;
-	  case FIND_BALL:
+	  case BLUE_FIND_BALL:
 		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
-		  findAndTakeBall(findBall, 2);
+		  findAndTakeBall();
 		  if(sensorMEGA[4] == 0)
 		  {
-			  mode = FACING_SILO;
+			  mode = BLUE_FACING_SILO;
 		  }
 		  break;
-	  case FACING_SILO:
+	  case BLUE_FACING_SILO:
 		  setMotorSpeed(1, 0);
 		  setMotorSpeed(2, 0);
 		  setMotorSpeed(7, 0);
 		  servo_write(126);
-		  PID_KFtocoordinate(initialPos, 2, 0.6);
-		  if(initialPos_check)
+		  PID_KFtocoordinate(blue_facing_silo_EKF, 1.5, 0.0, 0.0, 1.2, 0.6, 3000);
+		  if(blue_facing_silo_check)
 		  {
-			  mode = FIND_SILO;
+			  mode = BLUE_FIND_SILO;
 		  }
 		  break;
-	  case FIND_SILO:
-		  placeBallInSilo(initialPos, 1);
+	  case BLUE_FIND_SILO:
+		  placeBallInSilo(blue_facing_silo, 1.2, 0.0, 0.0, 1.1);
 		  if((frontLeftDistance > 0 && frontLeftDistance <= 10) || (frontRightDistance > 0 && frontRightDistance <= 10))
 		  {
 			  Inverse_Kinematics(0, 0, 0);
-			  setMotorSpeed(1, -700);
-			  setMotorSpeed(2, -900);
+			  setMotorSpeed(1, -800);
+			  setMotorSpeed(2, -1000);
 			  setMotorSpeed(7, -1200);
 			  HAL_Delay(3000);
-			  mode = MAJU;
+			  mode = BLUE_STORAGE;
+		  }
+		  break;
+	  case RED_STEP1:
+		  PID_KFtocoordinate(red_step1, 1.0, 0.0, 0.0, 1.0, 0.8, 5000);
+		  if(red_step1_check)
+		  {
+			  mode = RED_STEP2;
+		  }
+		  break;
+	  case RED_STEP2:
+		  PID_KFtocoordinate(red_step2, 1.0, 0.0, 0.0, 1.0, 0.8, 5000);
+		  if(red_step2_check)
+		  {
+			  mode = RED_STEP3;
+		  }
+		  break;
+	  case RED_STEP3:
+		  PID_KFtocoordinate(red_step3, 1.0, 0.0, 0.0, 1.0, 0.8, 5000);
+		  if(red_step3_check)
+		  {
+			  mode = RED_STEP4;
+		  }
+		  break;
+	  case RED_STEP4:
+		  PID_KFtocoordinate(red_step4, 1.0, 0.0, 0.0, 1.0, 0.8, 5000);
+		  if(red_step4_check)
+		  {
+			  mode = RED_STORAGE;
+		  }
+		  break;
+	  case RED_STORAGE:
+		  setMotorSpeed(1, 0);
+		  setMotorSpeed(2, 0);
+		  setMotorSpeed(7, 0);
+		  PID_KFtocoordinate(red_storage, 1.3, 0.0, 0.0, 1.4, 0.6, 5000);
+		  if(red_storage_check)
+		  {
+			  mode = RED_FIND_BALL;
+		  }
+		  break;
+	  case RED_FIND_BALL:
+		  findAndTakeBall();
+		  if(sensorMEGA[4] == 0)
+		  {
+			  mode = RED_FACING_SILO;
+		  }
+		  break;
+	  case RED_FACING_SILO:
+		  setMotorSpeed(1, 0);
+		  setMotorSpeed(2, 0);
+		  setMotorSpeed(7, 0);
+		  servo_write(126);
+		  PID_KFtocoordinate(red_facing_silo_EKF, 1.5, 0.0, 0.0, 1.2, 0.7, 5000);
+		  if(red_facing_silo_check)
+		  {
+			  mode = RED_FIND_SILO;
+		  }
+		  break;
+	  case RED_FIND_SILO:
+		  placeBallInSilo(red_facing_silo, 1.2, 0.0, 0.0, 1.1);
+		  if((frontLeftDistance > 0 && frontLeftDistance <= 10) || (frontRightDistance > 0 && frontRightDistance <= 10))
+		  {
+			  Inverse_Kinematics(0, 0, 0);
+			  setMotorSpeed(1, -800);
+			  setMotorSpeed(2, -1000);
+			  setMotorSpeed(7, -1200);
+			  HAL_Delay(3000);
+			  mode = RED_STORAGE;
 		  }
 		  break;
 	  case TES:
-//		  PID_Kalman(tes, 1);
-		  PID_KFtocoordinate(tes, 1, 0.8);
+		  PID_KFtocoordinate(tes, 1.0, 0.0, 0.0, 1.0, 0.8, 3000);
 		  break;
 	  default:
 		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
@@ -485,9 +632,9 @@ static void MX_TIM1_Init(void)
 
   /* USER CODE END TIM1_Init 1 */
   htim1.Instance = TIM1;
-  htim1.Init.Prescaler = 33;
+  htim1.Init.Prescaler = 20;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 4999;
+  htim1.Init.Period = 8000-1;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -571,7 +718,7 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 3359;
+  htim2.Init.Prescaler = 1680-1;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim2.Init.Period = 999;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -635,9 +782,9 @@ static void MX_TIM8_Init(void)
 
   /* USER CODE END TIM8_Init 1 */
   htim8.Instance = TIM8;
-  htim8.Init.Prescaler = 33;
+  htim8.Init.Prescaler = 20;
   htim8.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim8.Init.Period = 4999;
+  htim8.Init.Period = 8000-1;
   htim8.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim8.Init.RepetitionCounter = 0;
   htim8.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -980,12 +1127,18 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			}
 			memset(receive, 0, sizeof(receive));
 			rxIndex = 0;
-			HAL_UART_Receive_IT(&huart1, receive, 1);
+			if(HAL_UART_Receive_IT(&huart1, receive, 1) != HAL_OK)
+			{
+				Error_Handler();
+			}
 		}
 		else
 		{
 			rxIndex++;
-			HAL_UART_Receive_IT(&huart1, receive + rxIndex, 1);
+			if(HAL_UART_Receive_IT(&huart1, receive + rxIndex, 1) != HAL_OK)
+			{
+				Error_Handler();
+			}
 		}
 	}
 	if(huart->Instance == USART2)
@@ -1002,12 +1155,18 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			}
 			memset(receiveCAM, 0, sizeof(receiveCAM));
 			indexCAM = 0;
-			HAL_UART_Receive_IT(&huart2, receiveCAM, 1);
+			if(HAL_UART_Receive_IT(&huart2, receiveCAM, 1) != HAL_OK)
+			{
+				Error_Handler();
+			}
 		}
 		else
 		{
 			indexCAM++;
-			HAL_UART_Receive_IT(&huart2, receiveCAM + indexCAM, 1);
+			if(HAL_UART_Receive_IT(&huart2, receiveCAM + indexCAM, 1) != HAL_OK)
+			{
+				Error_Handler();
+			}
 		}
 	}
 	if(huart->Instance == USART3)
@@ -1024,12 +1183,18 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			}
 			memset(receiveMEGA, 0, sizeof(receiveMEGA));
 			indexMEGA = 0;
-			HAL_UART_Receive_IT(&huart3, receiveMEGA, 1);
+			if(HAL_UART_Receive_IT(&huart3, receiveMEGA, 1) != HAL_OK)
+			{
+				Error_Handler();
+			}
 		}
 		else
 		{
 			indexMEGA++;
-			HAL_UART_Receive_IT(&huart3, receiveMEGA + indexMEGA, 1);
+			if(HAL_UART_Receive_IT(&huart3, receiveMEGA + indexMEGA, 1) != HAL_OK)
+			{
+				Error_Handler();
+			}
 		}
 	}
 }
@@ -1046,6 +1211,10 @@ void Error_Handler(void)
   __disable_irq();
   while (1)
   {
+	  Inverse_Kinematics(0, 0, 0);
+	  setMotorSpeed(1, 0);
+	  setMotorSpeed(2, 0);
+	  setMotorSpeed(7, 0);
   }
   /* USER CODE END Error_Handler_Debug */
 }

@@ -1,7 +1,7 @@
 ../Core/Src/invicto_motor.c:20:6:motorDirection	3
 ../Core/Src/invicto_motor.c:44:6:setMotorSpeed	6
-../Core/Src/invicto_motor.c:63:6:Inverse_Kinematics	17
-../Core/Src/invicto_motor.c:83:6:baru	14
-../Core/Src/invicto_motor.c:120:6:putar	17
-../Core/Src/invicto_motor.c:142:6:start	23
-../Core/Src/invicto_motor.c:198:6:nanjak	17
+../Core/Src/invicto_motor.c:63:6:Inverse_Kinematics	14
+../Core/Src/invicto_motor.c:95:6:baru	17
+../Core/Src/invicto_motor.c:118:6:putar	17
+../Core/Src/invicto_motor.c:140:6:start	23
+../Core/Src/invicto_motor.c:196:6:nanjak	17

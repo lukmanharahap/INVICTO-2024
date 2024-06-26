@@ -2,9 +2,9 @@
 
 /* Variable for Encoder external */
 #define PPR 2000
-#define diameter 58 // Diameter of encoder wheel
-#define e1_e2 380 // distance between encoder 1 & 2
-#define e12_e3 230 // distance between the midpoint of encoder 1 & 2 and encoder 3
+#define diameter 58 // Diameter of encoder wheel in mm
+#define e1_e2 380 // distance between encoder 1 & 2 in mm
+#define e12_e3 230 // distance between the midpoint of encoder 1 & 2 and encoder 3 in mm
 const double mm_per_tick = M_PI * diameter / PPR;
 double xGlobal = 0.0, yGlobal = 0.0;
 double xLocal = 0.0, yLocal = 0.0;
@@ -18,8 +18,9 @@ char buffer[10];
 
 /* Variable for Encoder internal */
 #define PPR_IN 7
-#define diameter_IN 15.2 // Diameter of encoder wheel
-#define m1_m3 650 // distance between motor 1 and 3 / 2 and 4
+#define diameter_IN 15.2 // Diameter of encoder wheel in mm
+#define m1_m3 650 // distance between motor 1 and 3 / 2 and 4 in mm
+#define half_robot 250 // half of robot in mm
 const double mm_per_tick_IN = M_PI * diameter_IN / PPR_IN;
 static int oldEncIN1 = 0, oldEncIN2 = 0, oldEncIN3 = 0, oldEncIN4 = 0;
 extern volatile int counterIN1, counterIN2, counterIN3, counterIN4;
@@ -46,8 +47,8 @@ robotPosition odometry()
     oldEncIN3 = counterIN3;
     oldEncIN4 = counterIN4;
 
-    double dthetaIN = mm_per_tick_IN * ((-dn1_in + dn3_in) + (dn2_in - dn4_in))/(m1_m3 * 4);
-    double dxIN = mm_per_tick_IN * (-dn1_in + dn2_in - dn3_in + dn4_in)/4 * cos(M_PI_4);
+    double dthetaIN = mm_per_tick_IN * ((-dn1_in + dn3_in) + (dn2_in - dn4_in)) / (m1_m3 * 4);
+    double dxIN = mm_per_tick_IN * ((-dn1_in + dn2_in - dn3_in + dn4_in)/4 * cos(M_PI_4) + ((-dn1_in + dn3_in) + (dn2_in - dn4_in)) / (m1_m3 * 16));
     double dyIN = mm_per_tick_IN * (dn1_in + dn2_in + dn3_in + dn4_in)/4 * sin(M_PI_4);
 
     double distanceIN = hypot(dxIN, dyIN);
@@ -91,20 +92,25 @@ robotPosition odometry()
 
     currentPosition.x_global = xGlobal;
     currentPosition.y_global = yGlobal;
+    currentPosition.h = sensorData[0];
+
     currentPosition.x_local = xLocal;
     currentPosition.y_local = yLocal;
+
     currentPosition.x_in_global = xGlobalIN;
     currentPosition.y_in_global = yGlobalIN;
+    currentPosition.h_en = (heading + headingIN) * 90.0 / M_PI;
+
     currentPosition.x_in_local = xLocalIN;
     currentPosition.y_in_local = yLocalIN;
-    currentPosition.h_en = (heading + headingIN) * 90/M_PI;
-    currentPosition.h = sensorData[0];
 
     return currentPosition;
 }
 
 double getVelocity()
 {
+	static uint32_t lastTimer = 0;
+
     /* ENCODER INTERNAL */
     int dn1_in = counterIN1 - oldEncIN1;
     int dn2_in = counterIN2 - oldEncIN2;
@@ -133,8 +139,8 @@ double getVelocity()
 
     double distance = hypot(dx, dy);
 
-    uint32_t dt = HAL_GetTick();
-    double velocity = (distance + distanceIN) / (2*dt);
+    uint32_t timer = HAL_GetTick();
+    double velocity = (distance + distanceIN) / (2*(timer - lastTimer));
 
     return velocity;
 }
@@ -385,6 +391,9 @@ void displayPosition(robotPosition position, uint8_t type)
 	sprintf(buffer, "Yaw:%.2f", position.h);
 	lcd_write_string(buffer);
 	lcd_set_cursor(3, 0);
-	sprintf(buffer, "Pitch:%.2f", sensorData[1]);
+	sprintf(buffer, "P:%.2f", sensorData[1]);
+	lcd_write_string(buffer);
+	lcd_set_cursor(3, 10);
+	sprintf(buffer, "R:%.2f", sensorData[2]);
 	lcd_write_string(buffer);
 }

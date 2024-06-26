@@ -23,12 +23,12 @@ typedef struct
 
 void motorDirection(uint8_t motor, uint8_t direction);
 void setMotorSpeed(uint8_t motor, double speed);
-void Inverse_Kinematics(int Vx, int Vy, int W);
+void Inverse_Kinematics(double Vx, double Vy, double W);
+void baru(double Vx, double Vy, double W);
 void start(int Vx, int Vy, int W, uint8_t battery);
 void kanan(int Vx, int Vy, int W);
 void nanjak(int Vx, int Vy, int W);
 void putar(int Vx, int Vy, int W);
 void coba(int Vx, int Vy, int W);
-void baru(double Vx, double Vy, double W);
 
 #endif
