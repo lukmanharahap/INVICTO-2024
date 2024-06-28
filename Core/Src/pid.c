@@ -11,8 +11,6 @@ double PID_controller(double setpoint, double actual_position, double Kp, double
     // Proportional
     double error = setpoint - actual_position;
 
-//    if(fabs(error) < 200) error = 0;
-
     // Integral
     integral += error * dt;
 
@@ -38,8 +36,6 @@ double PID_controllerH(double setpoint, double actual_position, double Kp)
 	{
 		error += 360;
 	}
-
-//	if(fabs(error) < 1) error = 0;
 
     // Proportional
 	double P = Kp * error;

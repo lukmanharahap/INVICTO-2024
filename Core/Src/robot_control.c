@@ -95,10 +95,19 @@ double limitAcceleration(double currentVelocity, double targetVelocity, double m
     return targetVelocity;
 }
 
-bool atTargetExternal(robotPosition setpoint, robotPosition position, double xyTolerance, double Htolerance)
+bool atTargetEG(external_global setpoint, external_global position, double xyTolerance, double Htolerance)
 {
-	double error_x = setpoint.x_global - position.x_global;
-	double error_y = setpoint.y_global - position.y_global;
+	double error_x = setpoint.x - position.x;
+	double error_y = setpoint.y - position.y;
+	double error_h = fabs(setpoint.h - position.h);
+	double distance = hypot(error_x, error_y);
+	return distance < xyTolerance && error_h < Htolerance;
+}
+
+bool atTargetEL(external_local setpoint, external_local position, double xyTolerance, double Htolerance)
+{
+	double error_x = setpoint.x - position.x;
+	double error_y = setpoint.y - position.y;
 	double error_h = fabs(setpoint.h - position.h);
 	double distance = hypot(error_x, error_y);
 	return distance < xyTolerance && error_h < Htolerance;
@@ -146,25 +155,22 @@ void servo_write(int angle)
 	__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4, i);
 }
 
-void PID_External(robotPosition setpoint, double Kp, double Ki, double Kd, double KpH, double smoothingFactor, double maxVelocity)
+void PID_EG(external_global setpoint, double Kp, double Ki, double Kd, double KpH, double smoothingFactor, double maxVelocity)
 {
-    robotPosition currentPosition = odometry();
+	external_global currentPosition = odometry_eg();
 
 	double pitch = sensorData[1] * 300; // IMU pitch
 	double roll = sensorData[2] * 300; // IMU roll
 
-    double error_x = setpoint.x_global - currentPosition.x_global;
-    double error_y = setpoint.y_global - currentPosition.y_global;
-
-    double heading = atan2(error_y, error_x);
+    double error_x = setpoint.x - currentPosition.x;
+    double error_y = setpoint.y - currentPosition.y;
     double current_heading_rad = currentPosition.h * M_PI / 180.0;
-    double heading_rad = heading - current_heading_rad;
 
     double distance = hypot(error_x, error_y);
     double velocityFactor = fmin(distance, maxVelocity) / distance;
 
-    double Vx_local = PID_controller(setpoint.x_global, currentPosition.x_global, Kp, Ki, Kd) * cos(heading_rad) * velocityFactor;
-    double Vy_local = PID_controller(setpoint.y_global, currentPosition.y_global, Kp, Ki, Kd) * sin(heading_rad) * velocityFactor;
+    double Vx_local = PID_controller(setpoint.x, currentPosition.x, Kp, Ki, Kd) * velocityFactor;
+    double Vy_local = PID_controller(setpoint.y, currentPosition.y, Kp, Ki, Kd) * velocityFactor;
 
     double Vx = Vx_local * cos(current_heading_rad) - Vy_local * sin(current_heading_rad);
     double Vy = Vx_local * sin(current_heading_rad) + Vy_local * cos(current_heading_rad);
@@ -179,15 +185,15 @@ void PID_External(robotPosition setpoint, double Kp, double Ki, double Kd, doubl
     Inverse_Kinematics(Vx, Vy, W);
 }
 
-void PID_Internal(robotPosition setpoint, double Kp, double Ki, double Kd, double KpH, double smoothingFactor, double maxVelocity)
+void PID_EL(external_local setpoint, double Kp, double Ki, double Kd, double KpH, double smoothingFactor, double maxVelocity)
 {
-    robotPosition currentPosition = odometry();
+	external_local currentPosition = odometry_el();
 
 	double pitch = sensorData[1] * 300; // IMU pitch
 	double roll = sensorData[2] * 300; // IMU roll
 
-    double error_x = setpoint.x_in_global - currentPosition.x_in_global;
-    double error_y = setpoint.y_in_global - currentPosition.y_in_global;
+    double error_x = setpoint.x - currentPosition.x;
+    double error_y = setpoint.y - currentPosition.y;
 
     double heading = atan2(error_y, error_x);
     double current_heading_rad = currentPosition.h * M_PI / 180.0;
@@ -196,8 +202,98 @@ void PID_Internal(robotPosition setpoint, double Kp, double Ki, double Kd, doubl
     double distance = hypot(error_x, error_y);
     double velocityFactor = fmin(distance, maxVelocity) / distance;
 
-    double Vx_local = PID_controller(setpoint.x_in_global, currentPosition.x_in_global, Kp, Ki, Kd) * cos(heading_rad) * velocityFactor;
-    double Vy_local = PID_controller(setpoint.y_in_global, currentPosition.y_in_global, Kp, Ki, Kd) * sin(heading_rad) * velocityFactor;
+    double Vx = PID_controller(setpoint.x, currentPosition.x, Kp, Ki, Kd) * cos(heading_rad) * velocityFactor;
+    double Vy = PID_controller(setpoint.y, currentPosition.y, Kp, Ki, Kd) * sin(heading_rad) * velocityFactor;
+    double W = PID_controllerH(setpoint.h, currentPosition.h, KpH);
+
+    if(roll > 0)	{Vx -= roll;}
+    else			{Vx += roll;}
+    if(pitch > 0)	{Vy += pitch;}
+    else			{Vy -= pitch;}
+
+    smoothVelocity(&Vx, &Vy, &W, smoothingFactor);
+    Inverse_Kinematics(Vx, Vy, W);
+}
+
+void PID_IG(internal_global setpoint, double Kp, double Ki, double Kd, double KpH, double smoothingFactor, double maxVelocity)
+{
+	internal_global currentPosition = odometry_ig();
+
+	double pitch = sensorData[1] * 300; // IMU pitch
+	double roll = sensorData[2] * 300; // IMU roll
+
+    double error_x = setpoint.x - currentPosition.x;
+    double error_y = setpoint.y - currentPosition.y;
+    double current_heading_rad = currentPosition.h * M_PI / 180.0;
+
+    double distance = hypot(error_x, error_y);
+    double velocityFactor = fmin(distance, maxVelocity) / distance;
+
+    double Vx_local = PID_controller(setpoint.x, currentPosition.x, Kp, Ki, Kd) * velocityFactor;
+    double Vy_local = PID_controller(setpoint.y, currentPosition.y, Kp, Ki, Kd) * velocityFactor;
+
+    double Vx = Vx_local * cos(current_heading_rad) - Vy_local * sin(current_heading_rad);
+    double Vy = Vx_local * sin(current_heading_rad) + Vy_local * cos(current_heading_rad);
+    double W = PID_controllerH(setpoint.h, currentPosition.h, KpH);
+
+    if(roll > 0)	{Vx -= roll;}
+    else			{Vx += roll;}
+    if(pitch > 0)	{Vy += pitch;}
+    else			{Vy -= pitch;}
+
+    smoothVelocity(&Vx, &Vy, &W, smoothingFactor);
+    Inverse_Kinematics(Vx, Vy, W);
+}
+
+void PID_IL(internal_local setpoint, double Kp, double Ki, double Kd, double KpH, double smoothingFactor, double maxVelocity)
+{
+	internal_local currentPosition = odometry_il();
+
+	double pitch = sensorData[1] * 300; // IMU pitch
+	double roll = sensorData[2] * 300; // IMU roll
+
+    double error_x = setpoint.x - currentPosition.x;
+    double error_y = setpoint.y - currentPosition.y;
+
+    double heading = atan2(error_y, error_x);
+    double current_heading_rad = currentPosition.h * M_PI / 180.0;
+    double heading_rad = heading - current_heading_rad;
+
+    double distance = hypot(error_x, error_y);
+    double velocityFactor = fmin(distance, maxVelocity) / distance;
+
+    double Vx = PID_controller(setpoint.x, currentPosition.x, Kp, Ki, Kd) * cos(heading_rad) * velocityFactor;
+    double Vy = PID_controller(setpoint.y, currentPosition.y, Kp, Ki, Kd) * sin(heading_rad) * velocityFactor;
+    double W = PID_controllerH(setpoint.h, currentPosition.h, KpH);
+
+    if(roll > 0)	{Vx -= roll;}
+    else			{Vx += roll;}
+    if(pitch > 0)	{Vy += pitch;}
+    else			{Vy -= pitch;}
+
+    smoothVelocity(&Vx, &Vy, &W, smoothingFactor);
+    Inverse_Kinematics(Vx, Vy, W);
+}
+
+void PID_External(external_global setpoint, double Kp, double Ki, double Kd, double KpH, double smoothingFactor, double maxVelocity)
+{
+	external_global currentPosition = odometry_eg();
+
+	double pitch = sensorData[1] * 300; // IMU pitch
+	double roll = sensorData[2] * 300; // IMU roll
+
+    double error_x = setpoint.x - currentPosition.x;
+    double error_y = setpoint.y - currentPosition.y;
+
+    double heading = atan2(error_y, error_x);
+    double current_heading_rad = currentPosition.h * M_PI / 180.0;
+    double heading_rad = heading - current_heading_rad;
+
+    double distance = hypot(error_x, error_y);
+    double velocityFactor = fmin(distance, maxVelocity) / distance;
+
+    double Vx_local = fabs(PID_controller(setpoint.x, currentPosition.x, Kp, Ki, Kd)) * cos(heading_rad) * velocityFactor;
+    double Vy_local = fabs(PID_controller(setpoint.y, currentPosition.y, Kp, Ki, Kd)) * sin(heading_rad) * velocityFactor;
 
     double Vx = Vx_local * cos(current_heading_rad) - Vy_local * sin(current_heading_rad);
     double Vy = Vx_local * sin(current_heading_rad) + Vy_local * cos(current_heading_rad);
@@ -214,8 +310,7 @@ void PID_Internal(robotPosition setpoint, double Kp, double Ki, double Kd, doubl
 
 void PID_KFtocoordinate(EKF setpoint, double Kp, double Ki, double Kd, double KpH, double smoothingFactor, double maxVelocity)
 {
-    EKF currentPosition = extendedKalmanFilter();
-//	robotPosition currentPosition = odometry();
+    EKF currentPosition = odometry_fusion();
 
 	double pitch = sensorData[1] * 300; // IMU pitch
 	double roll = sensorData[2] * 300; // IMU roll
@@ -285,46 +380,66 @@ void PID_moveToCoordinate(EKF *setpoint, double Kp, double Ki, double Kd, double
     }
 }
 
-void PID_gotoX(double setpoint_x, double Kp, double Ki, double Kd)
+void PID_gotoX(external_global setpoint, double Kp, double Ki, double Kd, double KpH, double smoothingFactor, double maxVelocity)
 {
-	robotPosition currentPosition = odometry();
+	external_global currentPosition = odometry_eg();
 
-	double sin_h = sin(currentPosition.h * M_PI / 180.0);
-	double cos_h = cos(currentPosition.h * M_PI / 180.0);
+	double pitch = sensorData[1] * 300; // IMU pitch
+	double roll = sensorData[2] * 300; // IMU roll
 
-	double Vx = PID_controller(setpoint_x, currentPosition.x_global, Kp, Ki, Kd) * cos_h;
-    double Vy = PID_controller(0.0, currentPosition.y_global, Kp, Ki, Kd) * sin_h;
-    double W = PID_controllerH(0.0, currentPosition.h, 1.5);
-    Inverse_Kinematics(Vx, Vy, W);
+    double error_x = setpoint.x - currentPosition.x;
+    double error_y = setpoint.y - currentPosition.y;
+    double current_heading_rad = currentPosition.h * M_PI / 180.0;
+
+    double distance = hypot(error_x, error_y);
+    double velocityFactor = fmin(distance, maxVelocity) / distance;
+
+    double Vx = PID_controller(setpoint.x, currentPosition.x, Kp, Ki, Kd) * cos(current_heading_rad) * velocityFactor;
+    double Vy = PID_controller(setpoint.y, currentPosition.y, Kp, Ki, Kd) * sin(current_heading_rad) * velocityFactor;
+    double W = PID_controllerH(setpoint.h, currentPosition.h, KpH);
+
+    if(roll > 0)	{Vx -= roll;}
+    else			{Vx += roll;}
+    if(pitch > 0)	{Vy += pitch;}
+    else			{Vy -= pitch;}
+
+    smoothVelocity(&Vx, &Vy, &W, smoothingFactor);
+    right(Vx, Vy, W);
 }
 
-void PID_gotoY(double setpoint_y, double Kp, double Ki, double Kd)
+void PID_gotoY(external_global setpoint, double Kp, double Ki, double Kd, double KpH, double smoothingFactor, double maxVelocity)
 {
-//	EKF currentPosition = extendedKalmanFilter();
-	robotPosition currentPosition = odometry();
+	external_global currentPosition = odometry_eg();
 
-	double yaw_rad = currentPosition.h * M_PI / 180.0;
-	double sin_h = sin(yaw_rad);
-	double cos_h = cos(yaw_rad);
+	double pitch = sensorData[1] * 300; // IMU pitch
+	double roll = sensorData[2] * 300; // IMU roll
 
-	double Vx = PID_controller(0.0, currentPosition.x_global, Kp, Ki, Kd) * sin_h;
-    double Vy = PID_controller(setpoint_y, currentPosition.y_global, Kp, Ki, Kd) * cos_h;
-    double W = PID_controllerH(0.0, currentPosition.h, 1.5);
+    double error_x = setpoint.x - currentPosition.x;
+    double error_y = setpoint.y - currentPosition.y;
+    double current_heading_rad = currentPosition.h * M_PI / 180.0;
 
-    Vx -= W * sin(yaw_rad);
-    Vy += W * cos(yaw_rad);
+    double distance = hypot(error_x, error_y);
+    double velocityFactor = fmin(distance, maxVelocity) / distance;
 
-    Inverse_Kinematics(-Vx, Vy, W);
+    double Vx = -PID_controller(setpoint.x, currentPosition.x, Kp, Ki, Kd) * sin(current_heading_rad) * velocityFactor;
+    double Vy = PID_controller(setpoint.y, currentPosition.y, Kp, Ki, Kd) * cos(current_heading_rad) * velocityFactor;
+    double W = PID_controllerH(setpoint.h, currentPosition.h, KpH);
+
+    if(roll > 0)	{Vx -= roll;}
+    else			{Vx += roll;}
+    if(pitch > 0)	{Vy += pitch;}
+    else			{Vy -= pitch;}
+
+    smoothVelocity(&Vx, &Vy, &W, smoothingFactor);
+    Inverse_Kinematics(Vx, Vy, W);
 }
 
 void PID_setDegree(double setpoint_h, double KpH)
 {
-//	EKF currentPosition = extendedKalmanFilter();
-	robotPosition currentPosition = odometry();
+	external_global currentPosition = odometry_eg();
 
     double W = PID_controllerH(setpoint_h, currentPosition.h, KpH);
     putar(0, 0, W);
-//    Inverse_Kinematics(0, 0, W);
 }
 
 void focusToTheBall()
@@ -383,7 +498,7 @@ Silo detectAndStoreSilo()
     bestSilo.detected = false;
     servo_write(126);
 
-    robotPosition position = odometry();
+    external_global position = odometry_eg();
     int siloDistances[MAX_SILOS] = {camera[3] * 10, camera[5] * 10, camera[7] * 10, camera[9] * 10, camera[11] * 10}; // convert to mm
     int siloAngles[MAX_SILOS] = {camera[4], camera[6], camera[8], camera[10], camera[12]};
 
@@ -401,8 +516,8 @@ Silo detectAndStoreSilo()
             silos[i].detected = true;
             silos[i].ballInSilo = ballExistence;
             // Calculate global coordinates of the detected silo
-            silos[i].x = position.x_global + siloDistances[i] * sin(siloAngles[i] * M_PI / 180.0);
-            silos[i].y = position.y_global + siloDistances[i] * cos(siloAngles[i] * M_PI / 180.0);
+            silos[i].x = position.x + siloDistances[i] * sin(siloAngles[i] * M_PI / 180.0);
+            silos[i].y = position.y + siloDistances[i] * cos(siloAngles[i] * M_PI / 180.0);
 
             // Check if this is the nearest silo
             if (silos[i].distance < bestSilo.distance)
@@ -418,9 +533,9 @@ Silo detectAndStoreSilo()
     return bestSilo;
 }
 
-void placeBallInSilo(robotPosition setpoint, double Kp, double Ki, double Kd, double KpH)
+void placeBallInSilo(external_global setpoint, double Kp, double Ki, double Kd, double KpH)
 {
-    robotPosition position = odometry();
+    external_global position = odometry_eg();
     Silo bestSilo = detectAndStoreSilo();
     double Vx = 0.0, Vy = 0.0, W = 0.0;
 
@@ -437,8 +552,8 @@ void placeBallInSilo(robotPosition setpoint, double Kp, double Ki, double Kd, do
         double targetY = bestSilo.y;
     //    double targetH = atan2(targetY - position.y_global, targetX - position.x_global) * 180.0 / M_PI;
 
-        Vx = PID_controller(targetX, position.x_global, Kp, Ki, Kd);
-        Vy = PID_controller(targetY, position.y_global, 1.6, Ki, Kd);
+        Vx = PID_controller(targetX, position.x, Kp, Ki, Kd);
+        Vy = PID_controller(targetY, position.y, 1.6, Ki, Kd);
         W = PID_controllerH(90.0, position.h, KpH);
 
         if(bestSilo.distance <= 400) {Vx = 0; Vy = 1000; W = 0;}
@@ -468,7 +583,7 @@ void findAndTakeBall()
      * camera[4]: silo angle (in degree)
      */
 
-    robotPosition position = odometry();
+	external_global position = odometry_eg();
 
     static uint32_t lastTimeBallSeen = 0;
     static uint32_t searchStartTime = 0;
@@ -485,9 +600,9 @@ void findAndTakeBall()
     double Vy = 0.0;
     double W = 0.0;
 
-    robotPosition findBall1 = {-2800.0, 0.0, -90.0};
-    robotPosition findBall2 = {-2800.0, 900.0, -179.0};
-    robotPosition findBall3 = {-2800.0, -900.0, 0.0};
+    external_global findBall1 = {-2800.0, 0.0, -90.0};
+    external_global findBall2 = {-2800.0, 900.0, -179.0};
+    external_global findBall3 = {-2800.0, -900.0, 0.0};
 
     focusToTheBall();
 
@@ -547,7 +662,7 @@ void findAndTakeBall()
         	lastSearchMode = 2;
         	PID_External(findBall2, 1.8, 0.0, 0.0, 1.3, 0.8, 3000);
         	searchStartTime = timer;
-        	if(atTargetExternal(findBall2, position, 100, 10))
+        	if(atTargetEG(findBall2, position, 100, 10))
         	{
         		searchMode = 1;
         	}
@@ -556,7 +671,7 @@ void findAndTakeBall()
         	lastSearchMode = 3;
         	PID_External(findBall3, 1.8, 0.0, 0.0, 1.3, 0.8, 3000);
         	searchStartTime = timer;
-        	if(atTargetExternal(findBall3, position, 100, 10))
+        	if(atTargetEG(findBall3, position, 100, 10))
         	{
         		searchMode = 1;
         	}
@@ -565,7 +680,7 @@ void findAndTakeBall()
         	lastSearchMode = 1;
         	PID_External(findBall1, 1.8, 0.0, 0.0, 1.3, 0.8, 3000);
         	searchStartTime = timer;
-        	if(atTargetExternal(findBall1, position, 100, 10))
+        	if(atTargetEG(findBall1, position, 100, 10))
         	{
         		searchMode = 1;
         	}

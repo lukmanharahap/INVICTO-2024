@@ -309,32 +309,15 @@ int main(void)
   }
 
   initializeSilos();
+  external_global blue_step1 = {0.0, 6000.0, 0.0};
+  external_global blue_step2 = {3700.0, 6000.0, 0.0};
+  external_global blue_step3 = {3700.0, 9500.0, 0.0};
+  external_global blue_step4 = {3700.0, 9500.0, -90.0};
+//  EKF tes1 = {0.0, 6000.0, 0.0};
+//  EKF tes2 = {3700.0, 6000.0, 0.0};
+//  EKF tes3 = {3700.0, 9000.0, 0.0};
 
-  EKF blue_step1 = {0.0, 6700.0, 0.0};
-  EKF blue_step2 = {4200.0, 6700.0, 0.0};
-  EKF blue_step3 = {4200.0, 9500.0, 0.0};
-  EKF blue_step4 = {4200.0, 9500.0, -90.0};
-  EKF blue_storage = {-2600.0, 0.0, 0.0};
-  EKF blue_facing_silo_EKF = {0.0, 0.0, 90.0};
-  robotPosition blue_facing_silo = {0.0, 0.0, 90.0};
-
-  EKF red_step1 = {0.0, 6700.0, 0.0};
-  EKF red_step2 = {-3500.0, 6200.0, 0.0};
-  EKF red_step3 = {-3500.0, 9500.0, 0.0};
-  EKF red_step4 = {-3500.0, 9500.0, 90.0};
-  EKF red_storage = {-900.0, 0.0, 0.0};
-  EKF red_facing_silo_EKF = {0.0, 0.0, 90.0};
-  robotPosition red_facing_silo = {0.0, 0.0, 90.0};
-
-  EKF coba[4] = {
-		  {0.0, 6400.0, 0.0},
-		  {3500.0, 6400.0, 0.0},
-		  {3500.0, 9500.0, 0.0},
-		  {3500.0, 9500.0, -90.0}
-  };
-  EKF tes = {0.0, 2000.0, 0.0};
-  robotPosition nyoba_internal = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 6700.0};
-
+  double tolerance = 200.0;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -342,46 +325,35 @@ int main(void)
   while (1)
   {
 	  lcd_init();
-	  EKF position = extendedKalmanFilter();
-	  robotPosition positionExtenal = odometry();
-//	  displayKalman(position);
-	  displayPosition(positionExtenal, in_global);
+
+	  external_global position = odometry_eg();
+//	  EKF position_ekf = odometry_fusion();
+	  display_EG();
+//	  displayKalman(position_ekf);
 //	  displayCounter();
 
-	  int frontLeftDistance = sensorMEGA[0];
-	  int frontRightDistance = sensorMEGA[1];
-	  int tolerance = 400;
+	  bool blue_step1_check = atTargetEG(blue_step1, position, tolerance+300, 1);
+	  bool blue_step2_check = atTargetEG(blue_step2, position, tolerance, 1);
+	  bool blue_step3_check = atTargetEG(blue_step3, position, tolerance, 1);
+	  bool blue_step4_check = atTargetEG(blue_step4, position, tolerance, 1);
 
-	  bool blue_step1_check = atTargetPosition(blue_step1, position, tolerance, 1);
-	  bool blue_step2_check = atTargetPosition(blue_step2, position, tolerance, 1);
-	  bool blue_step3_check = atTargetPosition(blue_step3, position, tolerance, 1);
-	  bool blue_step4_check = atTargetPosition(blue_step4, position, tolerance, 1);
-	  bool blue_storage_check = atTargetPosition(blue_storage, position, tolerance+500, 1);
-
-	  bool blue_facing_silo_check = atTargetExternal(blue_facing_silo, positionExtenal, tolerance+500, 1);
-
-	  bool red_step1_check = atTargetPosition(red_step1, position, tolerance, 1);
-	  bool red_step2_check = atTargetPosition(red_step2, position, tolerance, 1);
-	  bool red_step3_check = atTargetPosition(red_step3, position, tolerance, 1);
-	  bool red_step4_check = atTargetPosition(red_step4, position, tolerance, 1);
-	  bool red_storage_check = atTargetPosition(red_storage, position, tolerance+500, 1);
-	  bool red_facing_silo_check = atTargetExternal(red_facing_silo, positionExtenal, tolerance+500, 1);
+//	  bool tes1_check = atTargetPosition(tes1, position_ekf, tolerance, 1);
+//	  bool tes2_check = atTargetPosition(tes2, position_ekf, tolerance, 1);
+//	  bool tes3_check = atTargetPosition(tes3, position_ekf, tolerance, 1);
 
 	  switch(mode)
 	  {
 	  case BLUE_STEP1:
 		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
-		  PID_Internal(nyoba_internal, 1.3, 0.0, 0.0, 2.0, 0.8, 4000);
-//		  PID_moveToCoordinate(coba, 1.0, 0.0, 0.0, 1.0, tolerance, 3500);
-//		  PID_KFtocoordinate(blue_step1, 1.3, 0.0, 0.0, 2.5, 0.8, 4000);
-//		  if(blue_step1_check)
-//		  {
-//			  mode = BLUE_STEP2;
-//		  }
+		  PID_EG(blue_step1, 1.1, 0.0, 0.0, 2.5, 0.8, 4000);
+		  if(blue_step1_check)
+		  {
+			  mode = BLUE_STEP2;
+		  }
 		  break;
 	  case BLUE_STEP2:
 		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
-		  PID_KFtocoordinate(blue_step2, 2.4, 0.0, 0.0, 2.5, 0.8, 4000);
+		  PID_EG(blue_step2, 1.9, 0.0, 0.0, 2.5, 0.9, 5500);
 		  if(blue_step2_check)
 		  {
 			  mode = BLUE_STEP3;
@@ -389,132 +361,45 @@ int main(void)
 		  break;
 	  case BLUE_STEP3:
 		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
-		  PID_KFtocoordinate(blue_step3, 1.8, 0.0, 0.0, 2.0, 0.8, 5500);
+		  PID_EG(blue_step3, 1.5, 0.0, 0.0, 2.5, 0.8, 3500);
 		  if(blue_step3_check)
 		  {
-			  mode = BLUE_STEP4;
+			  mode = VOID;
 		  }
 		  break;
 	  case BLUE_STEP4:
 		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
-		  PID_KFtocoordinate(blue_step4, 2.0, 0.0, 0.0, 1.0, 0.8, 3000);
+		  PID_EG(blue_step4, 1.0, 0.0, 0.0, 1.0, 0.8, 1500);
 		  if(blue_step4_check)
 		  {
 			  mode = VOID;
 		  }
 		  break;
 	  case BLUE_STORAGE:
-		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
-		  setMotorSpeed(1, 0);
-		  setMotorSpeed(2, 0);
-		  setMotorSpeed(7, 0);
-		  PID_KFtocoordinate(blue_storage, 1.3, 0.0, 0.0, 1.4, 0.6, 3000);
-		  if(blue_storage_check)
-		  {
-			  mode = BLUE_FIND_BALL;
-		  }
 		  break;
 	  case BLUE_FIND_BALL:
-		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
-		  findAndTakeBall();
-		  if(sensorMEGA[4] == 0)
-		  {
-			  mode = BLUE_FACING_SILO;
-		  }
 		  break;
 	  case BLUE_FACING_SILO:
-		  setMotorSpeed(1, 0);
-		  setMotorSpeed(2, 0);
-		  setMotorSpeed(7, 0);
-		  servo_write(126);
-		  PID_KFtocoordinate(blue_facing_silo_EKF, 1.5, 0.0, 0.0, 1.2, 0.6, 3000);
-		  if(blue_facing_silo_check)
-		  {
-			  mode = BLUE_FIND_SILO;
-		  }
 		  break;
 	  case BLUE_FIND_SILO:
-		  placeBallInSilo(blue_facing_silo, 1.2, 0.0, 0.0, 1.1);
-		  if((frontLeftDistance > 0 && frontLeftDistance <= 10) || (frontRightDistance > 0 && frontRightDistance <= 10))
-		  {
-			  Inverse_Kinematics(0, 0, 0);
-			  setMotorSpeed(1, -800);
-			  setMotorSpeed(2, -1000);
-			  setMotorSpeed(7, -1200);
-			  HAL_Delay(3000);
-			  mode = BLUE_STORAGE;
-		  }
 		  break;
 	  case RED_STEP1:
-		  PID_KFtocoordinate(red_step1, 1.0, 0.0, 0.0, 1.0, 0.8, 5000);
-		  if(red_step1_check)
-		  {
-			  mode = RED_STEP2;
-		  }
 		  break;
 	  case RED_STEP2:
-		  PID_KFtocoordinate(red_step2, 1.0, 0.0, 0.0, 1.0, 0.8, 5000);
-		  if(red_step2_check)
-		  {
-			  mode = RED_STEP3;
-		  }
 		  break;
 	  case RED_STEP3:
-		  PID_KFtocoordinate(red_step3, 1.0, 0.0, 0.0, 1.0, 0.8, 5000);
-		  if(red_step3_check)
-		  {
-			  mode = RED_STEP4;
-		  }
 		  break;
 	  case RED_STEP4:
-		  PID_KFtocoordinate(red_step4, 1.0, 0.0, 0.0, 1.0, 0.8, 5000);
-		  if(red_step4_check)
-		  {
-			  mode = RED_STORAGE;
-		  }
 		  break;
 	  case RED_STORAGE:
-		  setMotorSpeed(1, 0);
-		  setMotorSpeed(2, 0);
-		  setMotorSpeed(7, 0);
-		  PID_KFtocoordinate(red_storage, 1.3, 0.0, 0.0, 1.4, 0.6, 5000);
-		  if(red_storage_check)
-		  {
-			  mode = RED_FIND_BALL;
-		  }
 		  break;
 	  case RED_FIND_BALL:
-		  findAndTakeBall();
-		  if(sensorMEGA[4] == 0)
-		  {
-			  mode = RED_FACING_SILO;
-		  }
 		  break;
 	  case RED_FACING_SILO:
-		  setMotorSpeed(1, 0);
-		  setMotorSpeed(2, 0);
-		  setMotorSpeed(7, 0);
-		  servo_write(126);
-		  PID_KFtocoordinate(red_facing_silo_EKF, 1.5, 0.0, 0.0, 1.2, 0.7, 5000);
-		  if(red_facing_silo_check)
-		  {
-			  mode = RED_FIND_SILO;
-		  }
 		  break;
 	  case RED_FIND_SILO:
-		  placeBallInSilo(red_facing_silo, 1.2, 0.0, 0.0, 1.1);
-		  if((frontLeftDistance > 0 && frontLeftDistance <= 10) || (frontRightDistance > 0 && frontRightDistance <= 10))
-		  {
-			  Inverse_Kinematics(0, 0, 0);
-			  setMotorSpeed(1, -800);
-			  setMotorSpeed(2, -1000);
-			  setMotorSpeed(7, -1200);
-			  HAL_Delay(3000);
-			  mode = RED_STORAGE;
-		  }
 		  break;
 	  case TES:
-		  PID_KFtocoordinate(tes, 1.0, 0.0, 0.0, 1.0, 0.8, 3000);
 		  break;
 	  default:
 		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);

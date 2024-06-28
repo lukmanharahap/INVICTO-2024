@@ -8,7 +8,6 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
-//#include "robot_control.h"
 #include "lcd_i2c.h"
 #include "invicto_motor.h"
 #include "pid.h"
@@ -26,20 +25,31 @@
 
 typedef struct
 {
-    double x_global;
-    double y_global;
+    double x;
+    double y;
     double h;
+} external_global;
 
-    double x_local;
-	double y_local;
+typedef struct
+{
+    double x;
+	double y;
+	double h;
+} external_local;
 
-    double x_in_global;
-    double y_in_global;
-	double h_en;
+typedef struct
+{
+    double x;
+    double y;
+	double h;
+} internal_global;
 
-    double x_in_local;
-    double y_in_local;
-} robotPosition;
+typedef struct
+{
+    double x;
+    double y;
+	double h;
+} internal_local;
 
 // State vector [x, y, theta]
 typedef struct {
@@ -61,14 +71,20 @@ typedef struct {
     double h;
 } EKF;
 
-robotPosition odometry();
+external_global odometry_eg();
+external_local odometry_el();
+internal_global odometry_ig();
+internal_local odometry_il();
 void displayKalman(EKF position);
 StateVector stateTransition(StateVector X);
 MeasurementVector measurementFunction(StateVector X);
 EKF extendedKalmanFilter();
+bool detectSlippage(external_global position, double threshold);
+EKF odometry_fusion();
 void cek(EKF position);
-void cek2(EKF setpoint, EKF position);
+void cek2(external_global position_eg, external_local position_el);
 void displayCounter();
-void displayPosition(robotPosition position, uint8_t type);
+void display_EG();
+void display_EL();
 
 #endif

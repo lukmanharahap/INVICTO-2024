@@ -66,10 +66,10 @@ void Inverse_Kinematics(double Vx, double Vy, double W)
     double minThreshold = 1000;
     double wheelMaxSpeed = 5500;
 
-    double M1 = (-sin(M_PI_4) * Vx + cos(M_PI_4) * Vy - R * W)*1.016985;
+    double M1 = (-sin(M_PI_4) * Vx + cos(M_PI_4) * Vy - R * W)*1.016985; // 1.016985
     double M2 = (-sin(3 * M_PI_4) * Vx + cos(3 * M_PI_4) * Vy - R * W);
-    double M3 = (-sin(5 * M_PI_4) * Vx + cos(5 * M_PI_4) * Vy - R * W)*1.05296;
-    double M4 = (-sin(7 * M_PI_4) * Vx + cos(7 * M_PI_4) * Vy - R * W)*0.95038;
+    double M3 = (-sin(5 * M_PI_4) * Vx + cos(5 * M_PI_4) * Vy - R * W)*1.05296; // 1.05296
+    double M4 = (-sin(7 * M_PI_4) * Vx + cos(7 * M_PI_4) * Vy - R * W)*0.95038; // 0.95038
 
     double maxM = fmax(fabs(M1), fmax(fabs(M2), fmax(fabs(M3), fabs(M4))));
 
@@ -92,27 +92,68 @@ void Inverse_Kinematics(double Vx, double Vy, double W)
     setMotorSpeed(8, (int)V4);
 }
 
-void baru(double Vx, double Vy, double W)
+void right(double Vx, double Vy, double W)
 {
-     double R = 7.6;
+    double R = 7.6;
+    double minThreshold = 1100;
+    double wheelMaxSpeed = 5500;
 
-     int minSpeed = 550;
-     int maxSpeed = 2600;
+    double M1 = (-sin(M_PI_4) * Vx + cos(M_PI_4) * Vy - R * W);
+    double M2 = (-sin(3 * M_PI_4) * Vx + cos(3 * M_PI_4) * Vy - R * W)*0.88108095263;
+    double M3 = (-sin(5 * M_PI_4) * Vx + cos(5 * M_PI_4) * Vy - R * W)*1.01886343711;
+    double M4 = (-sin(7 * M_PI_4) * Vx + cos(7 * M_PI_4) * Vy - R * W)*0.8813081062;
 
-     double M1 = -sin(1 * M_PI_4) * Vx + cos(1 * M_PI_4) * Vy - R * W;
-     double M2 = -sin(3 * M_PI_4) * Vx + cos(3 * M_PI_4) * Vy - R * W;
-     double M3 = -sin(5 * M_PI_4) * Vx + cos(5 * M_PI_4) * Vy - R * W;
-     double M4 = -sin(7 * M_PI_4) * Vx + cos(7 * M_PI_4) * Vy - R * W;
+    double maxM = fmax(fabs(M1), fmax(fabs(M2), fmax(fabs(M3), fabs(M4))));
 
-     double V1 = (M1 > minSpeed || M1 < -minSpeed) ? fmin(fmax(M1, -maxSpeed), maxSpeed) : ((M1 < 0) ? -minSpeed : ((M1 > 0) ? minSpeed : 0));
-     double V2 = (M2 > minSpeed || M2 < -minSpeed) ? fmin(fmax(M2, -maxSpeed), maxSpeed) : ((M2 < 0) ? -minSpeed : ((M2 > 0) ? minSpeed : 0));
-     double V3 = (M3 > minSpeed || M3 < -minSpeed) ? fmin(fmax(M3, -maxSpeed), maxSpeed) : ((M3 < 0) ? -minSpeed : ((M3 > 0) ? minSpeed : 0));
-     double V4 = (M4 > minSpeed || M4 < -minSpeed) ? fmin(fmax(M4, -maxSpeed), maxSpeed) : ((M4 < 0) ? -minSpeed : ((M4 > 0) ? minSpeed : 0));
+    if (maxM > wheelMaxSpeed) {
+        double scale = wheelMaxSpeed / maxM;
+        M1 *= scale;
+        M2 *= scale;
+        M3 *= scale;
+        M4 *= scale;
+    }
 
-     setMotorSpeed(6, V1);
-     setMotorSpeed(8, V2);
-     setMotorSpeed(4, V3);
-     setMotorSpeed(5, V4);
+    double V1 = (fabs(M1) > minThreshold) ? M1 : (M1 < 0) ? -minThreshold : ((M1 > 0) ? minThreshold : 0);
+    double V2 = (fabs(M2) > minThreshold) ? M2 : (M2 < 0) ? -minThreshold : ((M2 > 0) ? minThreshold : 0);
+    double V3 = (fabs(M3) > minThreshold) ? M3 : (M3 < 0) ? -minThreshold : ((M3 > 0) ? minThreshold : 0);
+    double V4 = (fabs(M4) > minThreshold) ? M4 : (M4 < 0) ? -minThreshold : ((M4 > 0) ? minThreshold : 0);
+
+    setMotorSpeed(6, (int)V1);
+    setMotorSpeed(5, (int)V2);
+    setMotorSpeed(4, (int)V3);
+    setMotorSpeed(8, (int)V4);
+}
+
+void murni(double Vx, double Vy, double W)
+{
+    double R = 7.6;
+    double minThreshold = 1100;
+    double wheelMaxSpeed = 5500;
+
+    double M1 = (-sin(M_PI_4) * Vx + cos(M_PI_4) * Vy - R * W);
+    double M2 = (-sin(3 * M_PI_4) * Vx + cos(3 * M_PI_4) * Vy - R * W);
+    double M3 = (-sin(5 * M_PI_4) * Vx + cos(5 * M_PI_4) * Vy - R * W);
+    double M4 = (-sin(7 * M_PI_4) * Vx + cos(7 * M_PI_4) * Vy - R * W);
+
+    double maxM = fmax(fabs(M1), fmax(fabs(M2), fmax(fabs(M3), fabs(M4))));
+
+    if (maxM > wheelMaxSpeed) {
+        double scale = wheelMaxSpeed / maxM;
+        M1 *= scale;
+        M2 *= scale;
+        M3 *= scale;
+        M4 *= scale;
+    }
+
+    double V1 = (fabs(M1) > minThreshold) ? M1 : (M1 < 0) ? -minThreshold : ((M1 > 0) ? minThreshold : 0);
+    double V2 = (fabs(M2) > minThreshold) ? M2 : (M2 < 0) ? -minThreshold : ((M2 > 0) ? minThreshold : 0);
+    double V3 = (fabs(M3) > minThreshold) ? M3 : (M3 < 0) ? -minThreshold : ((M3 > 0) ? minThreshold : 0);
+    double V4 = (fabs(M4) > minThreshold) ? M4 : (M4 < 0) ? -minThreshold : ((M4 > 0) ? minThreshold : 0);
+
+    setMotorSpeed(6, (int)V1);
+    setMotorSpeed(5, (int)V2);
+    setMotorSpeed(4, (int)V3);
+    setMotorSpeed(8, (int)V4);
 }
 
 void putar(int Vx, int Vy, int W)
@@ -135,80 +176,4 @@ void putar(int Vx, int Vy, int W)
      setMotorSpeed(8, V2);
      setMotorSpeed(4, V3);
      setMotorSpeed(5, V4);
-}
-
-void start(int Vx, int Vy, int W, uint8_t battery)
-{
-    double R = 7.6;
-    double M1, M2, M3, M4;
-
-    switch (battery)
-    {
-		case 1: // 24.3 < x < 24.7
-			M1 = (-sin(1 * M_PI_4) * Vx + cos(1 * M_PI_4) * Vy - R * W);
-			M2 = (-sin(3 * M_PI_4) * Vx + cos(3 * M_PI_4) * Vy - R * W)*1.057;
-			M3 = (-sin(5 * M_PI_4) * Vx + cos(5 * M_PI_4) * Vy - R * W)*1.058;
-			M4 = (-sin(7 * M_PI_4) * Vx + cos(7 * M_PI_4) * Vy - R * W);
-			break;
-    	case 2: // > 24.3
-		    M1 = -sin(1 * M_PI_4) * Vx + cos(1 * M_PI_4) * Vy - R * W;
-		    M2 = (-sin(3 * M_PI_4) * Vx + cos(3 * M_PI_4) * Vy - R * W)*1.04;
-		    M3 = (-sin(5 * M_PI_4) * Vx + cos(5 * M_PI_4) * Vy - R * W)*1.04;
-		    M4 = -sin(7 * M_PI_4) * Vx + cos(7 * M_PI_4) * Vy - R * W;
-    		break;
-		case 3: // 23.8 < x < 24.3
-		    M1 = -sin(1 * M_PI_4) * Vx + cos(1 * M_PI_4) * Vy - R * W;
-		    M2 = (-sin(3 * M_PI_4) * Vx + cos(3 * M_PI_4) * Vy - R * W)*1.062;
-		    M3 = (-sin(5 * M_PI_4) * Vx + cos(5 * M_PI_4) * Vy - R * W);
-		    M4 = -sin(7 * M_PI_4) * Vx + cos(7 * M_PI_4) * Vy - R * W;
-			break;
-		case 4: // 23.4 < x < 23.8
-		    M1 = -sin(1 * M_PI_4) * Vx + cos(1 * M_PI_4) * Vy - R * W;
-		    M2 = (-sin(3 * M_PI_4) * Vx + cos(3 * M_PI_4) * Vy - R * W)*1.06;
-		    M3 = (-sin(5 * M_PI_4) * Vx + cos(5 * M_PI_4) * Vy - R * W)*1.03;
-		    M4 = -sin(7 * M_PI_4) * Vx + cos(7 * M_PI_4) * Vy - R * W;
-		    break;
-		case 5: // 23.5 < x < 23.8
-		    M1 = -sin(1 * M_PI_4) * Vx + cos(1 * M_PI_4) * Vy - R * W;
-		    M2 = (-sin(3 * M_PI_4) * Vx + cos(3 * M_PI_4) * Vy - R * W)*1.02;
-		    M3 = (-sin(5 * M_PI_4) * Vx + cos(5 * M_PI_4) * Vy - R * W)*1.04;
-		    M4 = -sin(7 * M_PI_4) * Vx + cos(7 * M_PI_4) * Vy - R * W;
-		    break;
-		case 11:
-			M1 = (-sin(1 * M_PI_4) * Vx + cos(1 * M_PI_4) * Vy - R * W);
-			M2 = (-sin(3 * M_PI_4) * Vx + cos(3 * M_PI_4) * Vy - R * W);
-			M3 = (-sin(5 * M_PI_4) * Vx + cos(5 * M_PI_4) * Vy - R * W);
-			M4 = (-sin(7 * M_PI_4) * Vx + cos(7 * M_PI_4) * Vy - R * W);
-			break;
-	}
-
-    double V1 = (M1 > 500 || M1 < -500) ? fmin(fmax(M1, -2600), 2600) : ((M1 < -0) ? -500 : ((M1 > 0) ? 500 : 0));
-    double V2 = (M2 > 500 || M2 < -500) ? fmin(fmax(M2, -2600), 2600) : ((M2 < -0) ? -500 : ((M2 > 0) ? 500 : 0));
-    double V3 = (M3 > 500 || M3 < -500) ? fmin(fmax(M3, -2600), 2600) : ((M3 < -0) ? -500 : ((M3 > 0) ? 500 : 0));
-    double V4 = (M4 > 500 || M4 < -500) ? fmin(fmax(M4, -2600), 2600) : ((M4 < -0) ? -500 : ((M4 > 0) ? 500 : 0));
-
-    setMotorSpeed(6, V1);
-    setMotorSpeed(8, V2);
-    setMotorSpeed(4, V3);
-    setMotorSpeed(5, V4);
-}
-
-void nanjak(int Vx, int Vy, int W)
-{
-    double R = 7.6;
-
-    double M1 = (-sin(1 * M_PI_4) * Vx + cos(1 * M_PI_4) * Vy - R * W);
-    double M2 = (-sin(3 * M_PI_4) * Vx + cos(3 * M_PI_4) * Vy - R * W)*1.1;
-    double M3 = (-sin(5 * M_PI_4) * Vx + cos(5 * M_PI_4) * Vy - R * W)*1.2;
-    double M4 = (-sin(7 * M_PI_4) * Vx + cos(7 * M_PI_4) * Vy - R * W);
-
-    double V1 = (M1 > 500 || M1 < -500) ? fmin(fmax(M1, -2600), 2600) : ((M1 < -0) ? -500 : ((M1 > 0) ? 500 : 0));
-    double V2 = (M2 > 500 || M2 < -500) ? fmin(fmax(M2, -2600), 2600) : ((M2 < -0) ? -500 : ((M2 > 0) ? 500 : 0));
-    double V3 = (M3 > 500 || M3 < -500) ? fmin(fmax(M3, -2600), 2600) : ((M3 < -0) ? -500 : ((M3 > 0) ? 500 : 0));
-    double V4 = (M4 > 500 || M4 < -500) ? fmin(fmax(M4, -2600), 2600) : ((M4 < -0) ? -500 : ((M4 > 0) ? 500 : 0));
-
-    setMotorSpeed(6, V1);
-    setMotorSpeed(8, V2);
-    setMotorSpeed(4, V3);
-    setMotorSpeed(5, V4);
 }

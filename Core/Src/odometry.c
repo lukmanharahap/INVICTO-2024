@@ -11,7 +11,6 @@ double xLocal = 0.0, yLocal = 0.0;
 double heading = 0.0;
 static int oldEnc1 = 0, oldEnc2 = 0, oldEnc3 = 0;
 extern volatile int counter1, counter2, counter3;
-//extern double yaw;
 extern double sensorData[2];
 char buffer[10];
 /* END */
@@ -32,37 +31,40 @@ double headingIN = 0.0;
 extern int camera[13];
 extern int sensorMEGA[4];
 
-robotPosition odometry()
+external_global odometry_eg()
 {
-    robotPosition currentPosition;
+	external_global currentPosition;
+    double yaw = sensorData[0] * M_PI / 180.0;
 
-    /* ENCODER INTERNAL */
-    int dn1_in = counterIN1 - oldEncIN1;
-    int dn2_in = counterIN2 - oldEncIN2;
-    int dn3_in = counterIN3 - oldEncIN3;
-    int dn4_in = counterIN4 - oldEncIN4;
+    /* ENCODER EXTERNAL */
+    int dn1 = counter1 - oldEnc1;
+    int dn2 = counter2 - oldEnc2;
+    int dn3 = counter3 - oldEnc3;
 
-    oldEncIN1 = counterIN1;
-    oldEncIN2 = counterIN2;
-    oldEncIN3 = counterIN3;
-    oldEncIN4 = counterIN4;
+    oldEnc1 = counter1;
+    oldEnc2 = counter2;
+    oldEnc3 = counter3;
 
-    double dthetaIN = mm_per_tick_IN * ((-dn1_in + dn3_in) + (dn2_in - dn4_in)) / (m1_m3 * 4);
-    double dxIN = mm_per_tick_IN * ((-dn1_in + dn2_in - dn3_in + dn4_in)/4 * cos(M_PI_4) + ((-dn1_in + dn3_in) + (dn2_in - dn4_in)) / (m1_m3 * 16));
-    double dyIN = mm_per_tick_IN * (dn1_in + dn2_in + dn3_in + dn4_in)/4 * sin(M_PI_4);
-
-    double distanceIN = hypot(dxIN, dyIN);
-	double directionIN = atan2(dyIN, dxIN);
-	double theta_localIN = directionIN - dthetaIN;
-
-	xLocalIN += distanceIN * cos(theta_localIN);
-	yLocalIN += distanceIN * sin(theta_localIN);
-
-    double thetaIN = headingIN + (dthetaIN / 2.0);
-    xGlobalIN += dxIN * cos(thetaIN) + dyIN * sin(thetaIN);
-    yGlobalIN += -dxIN * sin(thetaIN) + dyIN * cos(thetaIN);
-    headingIN += dthetaIN;
+    double dtheta = mm_per_tick * (dn2 - dn1) / e1_e2;
+    double dx = mm_per_tick * (dn3 + (dn2 - dn1) * e12_e3 / e1_e2);
+    double dy = mm_per_tick * (dn1 + dn2) / 2.0;
     /* END */
+
+//	double theta = heading + (dtheta / 2.0);
+	xGlobal += dx * cos(yaw) + dy * sin(yaw);
+	yGlobal += -dx * sin(yaw) + dy * cos(yaw);
+	heading += dtheta;
+
+	currentPosition.x = xGlobal;
+	currentPosition.y = yGlobal;
+	currentPosition.h = sensorData[0];
+
+	return currentPosition;
+}
+
+external_local odometry_el()
+{
+	external_local currentPosition;
 
     /* ENCODER EXTERNAL */
     int dn1 = counter1 - oldEnc1;
@@ -80,31 +82,83 @@ robotPosition odometry()
     double distance = hypot(dx, dy);
 	double direction = atan2(dy, dx);
 	double theta_local = direction - dtheta;
+    /* END */
 
 	xLocal += distance * cos(theta_local);
 	yLocal += distance * sin(theta_local);
 
-    double theta = heading + (dtheta / 2.0);
-    xGlobal += dx * cos(theta) + dy * sin(theta);
-    yGlobal += -dx * sin(theta) + dy * cos(theta);
-    heading += dtheta;
+	currentPosition.x = xLocal;
+	currentPosition.y = yLocal;
+	currentPosition.h = sensorData[0];
+
+	return currentPosition;
+}
+
+internal_global odometry_ig()
+{
+	internal_global currentPosition;
+    double yaw = sensorData[0] * M_PI / 180.0;
+
+    /* ENCODER INTERNAL */
+    int dn1_in = counterIN1 - oldEncIN1;
+    int dn2_in = counterIN2 - oldEncIN2;
+    int dn3_in = counterIN3 - oldEncIN3;
+    int dn4_in = counterIN4 - oldEncIN4;
+
+    oldEncIN1 = counterIN1;
+    oldEncIN2 = counterIN2;
+    oldEncIN3 = counterIN3;
+    oldEncIN4 = counterIN4;
+
+    double dthetaIN = mm_per_tick_IN * ((-dn1_in + dn3_in) + (dn2_in - dn4_in)) / (m1_m3 * 4);
+    double dxIN = mm_per_tick_IN * ((-dn1_in + dn2_in - dn3_in + dn4_in)/4 * cos(M_PI_4) + ((-dn1_in + dn3_in) + (dn2_in - dn4_in)) / (m1_m3 * 4));
+    double dyIN = mm_per_tick_IN * (dn1_in + dn2_in + dn3_in + dn4_in)/4 * sin(M_PI_4);
     /* END */
 
-    currentPosition.x_global = xGlobal;
-    currentPosition.y_global = yGlobal;
-    currentPosition.h = sensorData[0];
+//	double thetaIN = headingIN + (dthetaIN / 2.0);
+	xGlobalIN += dxIN * cos(yaw) + dyIN * sin(yaw);
+	yGlobalIN += -dxIN * sin(yaw) + dyIN * cos(yaw);
+	headingIN += dthetaIN;
 
-    currentPosition.x_local = xLocal;
-    currentPosition.y_local = yLocal;
+	currentPosition.x = xGlobalIN;
+	currentPosition.y = yGlobalIN;
+	currentPosition.h = sensorData[0];
 
-    currentPosition.x_in_global = xGlobalIN;
-    currentPosition.y_in_global = yGlobalIN;
-    currentPosition.h_en = (heading + headingIN) * 90.0 / M_PI;
+	return currentPosition;
+}
 
-    currentPosition.x_in_local = xLocalIN;
-    currentPosition.y_in_local = yLocalIN;
+internal_local odometry_il()
+{
+	internal_local currentPosition;
 
-    return currentPosition;
+    /* ENCODER INTERNAL */
+    int dn1_in = counterIN1 - oldEncIN1;
+    int dn2_in = counterIN2 - oldEncIN2;
+    int dn3_in = counterIN3 - oldEncIN3;
+    int dn4_in = counterIN4 - oldEncIN4;
+
+    oldEncIN1 = counterIN1;
+    oldEncIN2 = counterIN2;
+    oldEncIN3 = counterIN3;
+    oldEncIN4 = counterIN4;
+
+    double dthetaIN = mm_per_tick_IN * ((-dn1_in + dn3_in) + (dn2_in - dn4_in)) / (m1_m3 * 4);
+    double dxIN = mm_per_tick_IN * ((-dn1_in + dn2_in - dn3_in + dn4_in)/4 * cos(M_PI_4) + ((-dn1_in + dn3_in) + (dn2_in - dn4_in)) / (m1_m3 * 4));
+    double dyIN = mm_per_tick_IN * (dn1_in + dn2_in + dn3_in + dn4_in)/4 * sin(M_PI_4);
+
+    double distanceIN = hypot(dxIN, dyIN);
+	double directionIN = atan2(dyIN, dxIN);
+	double theta_localIN = directionIN - dthetaIN;
+    /* END */
+
+	xLocalIN += distanceIN * cos(theta_localIN);
+	yLocalIN += distanceIN * sin(theta_localIN);
+
+    currentPosition.x = xLocalIN;
+    currentPosition.y = yLocalIN;
+	currentPosition.h = sensorData[0];
+
+	return currentPosition;
 }
 
 double getVelocity()
@@ -163,12 +217,12 @@ const double R[MEASUREMENT_DIM][MEASUREMENT_DIM] = {
 StateVector stateTransition(StateVector X)
 {
     StateVector X_next;
-    robotPosition position = odometry();
+    external_global position = odometry_eg();
 //    X_next.x = X.x + v * cos(X.theta) * dt + 0.5 * ax * pow(dt, 2) * cos(X.theta);
 //    X_next.y = X.y + v * sin(X.theta) * dt + 0.5 * ay * pow(dt, 2) * sin(X.theta);
 //    X_next.theta = X.theta + heading;
-    X_next.x = X.x + position.x_global;
-    X_next.y = X.y + position.y_global;
+    X_next.x = X.x + position.x;
+    X_next.y = X.y + position.y;
     X_next.theta = X.theta + position.h;
     return X_next;
 }
@@ -177,6 +231,7 @@ StateVector stateTransition(StateVector X)
 MeasurementVector measurementFunction(StateVector X)
 {
     MeasurementVector Z;
+
     Z.x = X.x;
     Z.y = X.y;
     Z.theta = X.theta;
@@ -187,14 +242,16 @@ MeasurementVector measurementFunction(StateVector X)
 EKF extendedKalmanFilter()
 {
 	EKF currentPosition;
-	robotPosition position = odometry();
+	external_global position_eg = odometry_eg();
+	internal_global position_ig = odometry_ig();
+
 	double P[STATE_DIM][STATE_DIM] = {
 		{1.0, 0.0, 0.0},
 		{0.0, 1.0, 0.0},
 		{0.0, 0.0, 1.0}};
 
     // Prediction step
-	StateVector X = {position.x_global, position.y_global, 0.0};
+	StateVector X = {position_ig.x, position_ig.y, 0.0};
     StateVector X_pred = stateTransition(X);
     double P_pred[STATE_DIM][STATE_DIM] = {
         {P[0][0] + Q[0][0], P[0][1], P[0][2]},
@@ -203,7 +260,7 @@ EKF extendedKalmanFilter()
     };
 
     // Update step
-	MeasurementVector Z = {position.x_in_global, position.y_in_global, 0.0};
+	MeasurementVector Z = {position_ig.x, position_ig.y, 0.0};
     MeasurementVector Z_pred = measurementFunction(X_pred);
     double Y[MEASUREMENT_DIM] = {Z.x - Z_pred.x, Z.y - Z_pred.y, Z.theta - Z_pred.theta};
     double S[MEASUREMENT_DIM][MEASUREMENT_DIM] = {
@@ -235,9 +292,28 @@ EKF extendedKalmanFilter()
 
     currentPosition.x = X.x;
     currentPosition.y = X.y;
-    currentPosition.h = position.h;
+    currentPosition.h = position_eg.h;
 
     return currentPosition;
+}
+
+bool detectSlippage(external_global position, double threshold)
+{
+    double discrepancy = hypot(position.x - position.x, position.y - position.y);
+    return discrepancy > threshold;
+}
+
+EKF odometry_fusion()
+{
+	EKF currentPosition;
+	external_global position_eg = odometry_eg();
+	internal_global position_ig = odometry_ig();
+
+	currentPosition.x = (position_eg.x + position_ig.x)/2.0;
+	currentPosition.y = (position_eg.y + position_ig.y)/2.0;
+	currentPosition.h = position_eg.h;
+
+	return currentPosition;
 }
 
 void displayKalman(EKF position)
@@ -267,26 +343,23 @@ void displayKalman(EKF position)
 	lcd_write_string(buffer);
 }
 
-void cek2(EKF setpoint, EKF position)
+void cek2(external_global position_eg, external_local position_el)
 {
 	lcd_set_cursor(0, 0);
-	sprintf(buffer, "X:%.2f", position.x);
+	sprintf(buffer, "X:%.2f", position_eg.x);
 	lcd_write_string(buffer);
 	lcd_set_cursor(1, 0);
-	sprintf(buffer, "Y:%.2f", position.y);
+	sprintf(buffer, "Y:%.2f", position_eg.y);
 	lcd_write_string(buffer);
 	lcd_set_cursor(2, 0);
-	sprintf(buffer, "Yaw:%.2f", position.h);
+	sprintf(buffer, "H:%.2f", position_eg.h);
 	lcd_write_string(buffer);
 
 	lcd_set_cursor(0, 10);
-	sprintf(buffer, "EX:%.2f", setpoint.x - position.x);
+	sprintf(buffer, "Xl:%.2f", position_el.x);
 	lcd_write_string(buffer);
 	lcd_set_cursor(1, 10);
-	sprintf(buffer, "EY:%.2f", setpoint.y - position.y);
-	lcd_write_string(buffer);
-	lcd_set_cursor(2, 10);
-	sprintf(buffer, "EYaw:%.2f", setpoint.h - position.h);
+	sprintf(buffer, "Yl:%.2f", position_el.y);
 	lcd_write_string(buffer);
 }
 
@@ -350,45 +423,39 @@ void displayCounter()
 	lcd_write_string(buffer);
 }
 
-void displayPosition(robotPosition position, uint8_t type)
+void display_EG()
 {
-	switch (type)
-	{
-		case global:
-			lcd_set_cursor(0, 0);
-			sprintf(buffer, "X:%.2f", position.x_global);
-			lcd_write_string(buffer);
-			lcd_set_cursor(1, 0);
-			sprintf(buffer, "Y:%.2f", position.y_global);
-			lcd_write_string(buffer);
-			break;
-		case local:
-			lcd_set_cursor(0, 0);
-			sprintf(buffer, "X:%.2f", position.x_local);
-			lcd_write_string(buffer);
-			lcd_set_cursor(1, 0);
-			sprintf(buffer, "Y:%.2f", position.y_local);
-			lcd_write_string(buffer);
-			break;
-		case in_global:
-			lcd_set_cursor(0, 0);
-			sprintf(buffer, "X:%.2f", position.x_in_global);
-			lcd_write_string(buffer);
-			lcd_set_cursor(1, 0);
-			sprintf(buffer, "Y:%.2f", position.y_in_global);
-			lcd_write_string(buffer);
-			break;
-		case in_local:
-			lcd_set_cursor(0, 0);
-			sprintf(buffer, "X:%.2f", position.x_in_local);
-			lcd_write_string(buffer);
-			lcd_set_cursor(1, 0);
-			sprintf(buffer, "Y:%.2f", position.y_in_local);
-			lcd_write_string(buffer);
-			break;
-	}
+	external_global position = odometry_eg();
+
+	lcd_set_cursor(0, 0);
+	sprintf(buffer, "X:%.2f", position.x);
+	lcd_write_string(buffer);
+	lcd_set_cursor(1, 0);
+	sprintf(buffer, "Y:%.2f", position.y);
+	lcd_write_string(buffer);
 	lcd_set_cursor(2, 0);
-	sprintf(buffer, "Yaw:%.2f", position.h);
+	sprintf(buffer, "H:%.2f", position.h);
+	lcd_write_string(buffer);
+	lcd_set_cursor(3, 0);
+	sprintf(buffer, "P:%.2f", sensorData[1]);
+	lcd_write_string(buffer);
+	lcd_set_cursor(3, 10);
+	sprintf(buffer, "R:%.2f", sensorData[2]);
+	lcd_write_string(buffer);
+}
+
+void display_EL()
+{
+	external_local position = odometry_el();
+
+	lcd_set_cursor(0, 0);
+	sprintf(buffer, "X:%.2f", position.x);
+	lcd_write_string(buffer);
+	lcd_set_cursor(1, 0);
+	sprintf(buffer, "Y:%.2f", position.y);
+	lcd_write_string(buffer);
+	lcd_set_cursor(2, 0);
+	sprintf(buffer, "H:%.2f", position.h);
 	lcd_write_string(buffer);
 	lcd_set_cursor(3, 0);
 	sprintf(buffer, "P:%.2f", sensorData[1]);
