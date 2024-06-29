@@ -24,4 +24,4 @@
 ../Core/Src/robot_control.c:493:6:detectAndStoreSilo	5
 ../Core/Src/robot_control.c:536:6:placeBallInSilo	5
 ../Core/Src/robot_control.c:575:6:findAndTakeBall	16
-../Core/Src/robot_control.c:721:6:displaySilo	1
+../Core/Src/robot_control.c:719:6:displaySilo	1

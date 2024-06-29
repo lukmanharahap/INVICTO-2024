@@ -7,7 +7,7 @@ extern TIM_HandleTypeDef htim2;
 
 extern double sensorData[3];
 extern int camera[13];
-extern int sensorMEGA[5];
+extern int sensorMEGA[4];
 char buffCAM[10];
 uint8_t lookingMode = 1;
 
@@ -141,7 +141,7 @@ void lookForTheBall(double targetAngle1, double targetAngle2, double currentAngl
             return; // Invalid mode, do nothing
     }
 
-    double W = PID_controllerH(targetAngle, currentAngle, 1.3);
+    double W = PID_controllerH(targetAngle, currentAngle, 1.0);
     putar(0, 0, W);
     if (fabs(targetAngle - currentAngle) < 5.0)
     {
@@ -151,7 +151,7 @@ void lookForTheBall(double targetAngle1, double targetAngle2, double currentAngl
 
 void servo_write(int angle)
 {
-	int i = map(0, 180, 10, 65, angle);
+	int i = map(0, 180, 30, 130, angle);
 	__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4, i);
 }
 
@@ -456,12 +456,12 @@ void focusToTheBall()
     if(ballExistence != 0)
     {
         double focus = atan2(yBALL, gndtoCam) * 180.0 / M_PI;
-        int focusMapping = map(0, 90, 50, 134, focus); // 50, 134
+        int focusMapping = map(0, 90, 45, 130, focus); // 45, 130
         servo_write(focusMapping);
     }
     else
     {
-    	servo_write(110);
+    	servo_write(97); // 100
 //    	if(increasing)
 //    	{
 //    		i+=5;
@@ -496,7 +496,7 @@ Silo detectAndStoreSilo()
     bestSilo.distance = SILO_NOT_DETECTED_DISTANCE;
     bestSilo.angle = SILO_NOT_DETECTED_ANGLE;
     bestSilo.detected = false;
-    servo_write(126);
+    servo_write(120);
 
     external_global position = odometry_eg();
     int siloDistances[MAX_SILOS] = {camera[3] * 10, camera[5] * 10, camera[7] * 10, camera[9] * 10, camera[11] * 10}; // convert to mm
@@ -553,26 +553,26 @@ void placeBallInSilo(external_global setpoint, double Kp, double Ki, double Kd, 
     //    double targetH = atan2(targetY - position.y_global, targetX - position.x_global) * 180.0 / M_PI;
 
         Vx = PID_controller(targetX, position.x, Kp, Ki, Kd);
-        Vy = PID_controller(targetY, position.y, 1.6, Ki, Kd);
+        Vy = PID_controller(targetY, position.y, Kp, Ki, Kd);
         W = PID_controllerH(90.0, position.h, KpH);
 
         if(bestSilo.distance <= 400) {Vx = 0; Vy = 1000; W = 0;}
 
-        smoothVelocity(&Vx, &Vy, &W, 0.75);
+        smoothVelocity(&Vx, &Vy, &W, 0.7);
         Inverse_Kinematics(Vx, Vy, W);
         lastTime = timer;
     }
     else if(timer - lastTime <= 1600)
     {
-        Inverse_Kinematics(0, 1000, 0);
+        Inverse_Kinematics(0, 2000, 0);
     }
     else
     {
-    	PID_External(setpoint, Kp, Ki, Kd, KpH, 0.75, 3000);
+    	PID_EG(setpoint, Kp, Ki, Kd, KpH, 0.75, 3000);
     }
 }
 
-void findAndTakeBall()
+void findAndTakeBall(external_global *findBall)
 {
     /*
      * Camera data:
@@ -600,10 +600,6 @@ void findAndTakeBall()
     double Vy = 0.0;
     double W = 0.0;
 
-    external_global findBall1 = {-2800.0, 0.0, -90.0};
-    external_global findBall2 = {-2800.0, 900.0, -179.0};
-    external_global findBall3 = {-2800.0, -900.0, 0.0};
-
     focusToTheBall();
 
     if (ballExistence != 0)
@@ -618,15 +614,15 @@ void findAndTakeBall()
         if(ballDistance <= 400) {Vx = 0; Vy = 1000; W = 0;}
 
         Inverse_Kinematics(Vx, Vy, W);
-        setMotorSpeed(1, -1000);
+        setMotorSpeed(1, -2000);
         lastTimeBallSeen = timer;
         searchStartTime = timer;
     }
     else if (timer - lastTimeBallSeen <= 700)
     {
         // If the ball was recently seen, keep moving forward
-        Inverse_Kinematics(0, 1300, 0);
-        setMotorSpeed(1, -1000);
+        Inverse_Kinematics(0, 2000, 0);
+        setMotorSpeed(1, -2000);
     }
     else
     {
@@ -640,7 +636,6 @@ void findAndTakeBall()
         switch(searchMode)
         {
         case 1:
-//        	putar(0, 0, 65);
         	if(timer - searchStartTime >= 6000)
         	{
         		searchMode += lastSearchMode;
@@ -658,29 +653,32 @@ void findAndTakeBall()
         		lookForTheBall(-70.0, 70.0, position.h);
         	}
         	break;
+
         case 2:
         	lastSearchMode = 2;
-        	PID_External(findBall2, 1.8, 0.0, 0.0, 1.3, 0.8, 3000);
+        	PID_EG(findBall[1], 2.8, 0.0, 0.0, 1.3, 0.8, 2700);
         	searchStartTime = timer;
-        	if(atTargetEG(findBall2, position, 100, 10))
+        	if(atTargetEG(findBall[1], position, 500, 10))
         	{
         		searchMode = 1;
         	}
         	break;
+
         case 3:
         	lastSearchMode = 3;
-        	PID_External(findBall3, 1.8, 0.0, 0.0, 1.3, 0.8, 3000);
+        	PID_EG(findBall[2], 2.0, 0.0, 0.0, 1.3, 0.8, 2700);
         	searchStartTime = timer;
-        	if(atTargetEG(findBall3, position, 100, 10))
+        	if(atTargetEG(findBall[2], position, 500, 10))
         	{
         		searchMode = 1;
         	}
         	break;
+
         case 4:
         	lastSearchMode = 1;
-        	PID_External(findBall1, 1.8, 0.0, 0.0, 1.3, 0.8, 3000);
+        	PID_EG(findBall[0], 2.8, 0.0, 0.0, 1.3, 0.8, 2700);
         	searchStartTime = timer;
-        	if(atTargetEG(findBall1, position, 100, 10))
+        	if(atTargetEG(findBall[0], position, 500, 10))
         	{
         		searchMode = 1;
         	}

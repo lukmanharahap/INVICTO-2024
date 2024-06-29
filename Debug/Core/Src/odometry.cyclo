@@ -11,6 +11,6 @@
 ../Core/Src/odometry.c:319:6:displayKalman	1
 ../Core/Src/odometry.c:346:6:cek2	1
 ../Core/Src/odometry.c:366:6:cek	1
-../Core/Src/odometry.c:401:6:displayCounter	1
-../Core/Src/odometry.c:426:6:display_EG	1
-../Core/Src/odometry.c:447:6:display_EL	1
+../Core/Src/odometry.c:405:6:displayCounter	1
+../Core/Src/odometry.c:430:6:display_EG	1
+../Core/Src/odometry.c:451:6:display_EL	1

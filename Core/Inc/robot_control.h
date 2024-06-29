@@ -42,7 +42,7 @@ void focusToTheBall();
 void initializeSilos();
 Silo detectAndStoreSilo();
 void placeBallInSilo(external_global setpoint, double Kp, double Ki, double Kd, double KpH);
-void findAndTakeBall();
+void findAndTakeBall(external_global *findBall);
 void displaySilo();
 
 #endif

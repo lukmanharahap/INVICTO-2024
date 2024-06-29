@@ -23,5 +23,5 @@
 ../Core/Src/robot_control.c:480:6:initializeSilos	24	static
 ../Core/Src/robot_control.c:493:6:detectAndStoreSilo	136	static
 ../Core/Src/robot_control.c:536:6:placeBallInSilo	176	static
-../Core/Src/robot_control.c:575:6:findAndTakeBall	176	static
-../Core/Src/robot_control.c:721:6:displaySilo	40	static
+../Core/Src/robot_control.c:575:6:findAndTakeBall	112	static
+../Core/Src/robot_control.c:719:6:displaySilo	40	static

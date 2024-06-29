@@ -81,7 +81,7 @@ MeasurementVector measurementFunction(StateVector X);
 EKF extendedKalmanFilter();
 bool detectSlippage(external_global position, double threshold);
 EKF odometry_fusion();
-void cek(EKF position);
+void cek();
 void cek2(external_global position_eg, external_local position_el);
 void displayCounter();
 void display_EG();

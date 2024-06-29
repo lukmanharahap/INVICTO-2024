@@ -363,38 +363,42 @@ void cek2(external_global position_eg, external_local position_el)
 	lcd_write_string(buffer);
 }
 
-void cek(EKF position)
+void cek()
 {
+//	lcd_set_cursor(0, 0);
+//	sprintf(buffer, "%d", camera[0]);
+//	lcd_write_string(buffer);
+//
+//	lcd_set_cursor(1, 0);
+//	sprintf(buffer, "%d", camera[1]);
+//	lcd_write_string(buffer);
+//
+//	lcd_set_cursor(2, 0);
+//	sprintf(buffer, "%d", camera[2]);
+//	lcd_write_string(buffer);
+//
+//	lcd_set_cursor(3, 0);
+//	sprintf(buffer, "%d", camera[3]);
+//	lcd_write_string(buffer);
+//
+//	lcd_set_cursor(0, 10);
+//	sprintf(buffer, "%d", camera[4]);
+//	lcd_write_string(buffer);
+
 	lcd_set_cursor(0, 0);
-	sprintf(buffer, "%d", camera[0]);
+	sprintf(buffer, "FL:%i", sensorMEGA[0]);
 	lcd_write_string(buffer);
 
 	lcd_set_cursor(1, 0);
-	sprintf(buffer, "%d", camera[1]);
+	sprintf(buffer, "FR:%i", sensorMEGA[1]);
 	lcd_write_string(buffer);
 
 	lcd_set_cursor(2, 0);
-	sprintf(buffer, "%d", camera[2]);
+	sprintf(buffer, "L:%i", sensorMEGA[2]);
 	lcd_write_string(buffer);
 
 	lcd_set_cursor(3, 0);
-	sprintf(buffer, "%d", camera[3]);
-	lcd_write_string(buffer);
-
-	lcd_set_cursor(0, 10);
-	sprintf(buffer, "%d", camera[4]);
-	lcd_write_string(buffer);
-
-	lcd_set_cursor(1, 10);
-	sprintf(buffer, "X:%.2f", position.x);
-	lcd_write_string(buffer);
-
-	lcd_set_cursor(2, 10);
-	sprintf(buffer, "Y:%.2f", position.y);
-	lcd_write_string(buffer);
-
-	lcd_set_cursor(3, 10);
-	sprintf(buffer, "Yaw:%.2f", position.h);
+	sprintf(buffer, "P:%i", sensorMEGA[3]);
 	lcd_write_string(buffer);
 }
 

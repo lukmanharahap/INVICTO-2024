@@ -10,7 +10,7 @@
 ../Core/Src/odometry.c:306:5:odometry_fusion	136	static
 ../Core/Src/odometry.c:319:6:displayKalman	32	static
 ../Core/Src/odometry.c:346:6:cek2	56	static
-../Core/Src/odometry.c:366:6:cek	32	static
-../Core/Src/odometry.c:401:6:displayCounter	8	static
-../Core/Src/odometry.c:426:6:display_EG	32	static
-../Core/Src/odometry.c:447:6:display_EL	32	static
+../Core/Src/odometry.c:366:6:cek	8	static
+../Core/Src/odometry.c:405:6:displayCounter	8	static
+../Core/Src/odometry.c:430:6:display_EG	32	static
+../Core/Src/odometry.c:451:6:display_EL	32	static

@@ -111,13 +111,12 @@ int camera[13];
  * index 0 -> Front left Distance
  * index 1 -> Front right Distance
  * index 2 -> Left Distance
- * index 3 -> Color (0 if blue else otherwise)
- * index 4 -> Proximity
+ * index 3 -> Proximity
  */
 uint8_t receiveMEGA[50];
 uint32_t indexMEGA = 0;
 uint32_t dataindexMEGA = 0;
-int sensorMEGA[5];
+int sensorMEGA[4];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -310,12 +309,19 @@ int main(void)
 
   initializeSilos();
   external_global blue_step1 = {0.0, 6000.0, 0.0};
-  external_global blue_step2 = {3700.0, 6000.0, 0.0};
-  external_global blue_step3 = {3700.0, 9500.0, 0.0};
-  external_global blue_step4 = {3700.0, 9500.0, -90.0};
-//  EKF tes1 = {0.0, 6000.0, 0.0};
-//  EKF tes2 = {3700.0, 6000.0, 0.0};
-//  EKF tes3 = {3700.0, 9000.0, 0.0};
+  external_global blue_step2 = {3770.0, 6000.0, 0.0};
+  external_global blue_step3 = {3770.0, 9500.0, 0.0};
+  external_global blue_step4 = {3770.0, 9500.0, -90.0};
+  external_global blue_storage = {1100.0, 9500.0, 0.0};
+  external_global blue_silo = {3700.0, 9500.0, 90.0};
+  external_global blueBall[3] = {
+		  {700.0, 9500.0, -90.0},
+		  {700.0, 10500.0, -179.0},
+		  {700.0, 8500.0, 0.0}
+  };
+
+//  external_global blue_storage = {-2600.0, 0.0, 0.0};
+//  external_global blue_silo = {0.0, 0.0, 90.0};
 
   double tolerance = 200.0;
   /* USER CODE END 2 */
@@ -325,6 +331,9 @@ int main(void)
   while (1)
   {
 	  lcd_init();
+
+	  int FL_distance = sensorMEGA[0];
+	  int FR_distance = sensorMEGA[2];
 
 	  external_global position = odometry_eg();
 //	  EKF position_ekf = odometry_fusion();
@@ -336,16 +345,14 @@ int main(void)
 	  bool blue_step2_check = atTargetEG(blue_step2, position, tolerance, 1);
 	  bool blue_step3_check = atTargetEG(blue_step3, position, tolerance, 1);
 	  bool blue_step4_check = atTargetEG(blue_step4, position, tolerance, 1);
-
-//	  bool tes1_check = atTargetPosition(tes1, position_ekf, tolerance, 1);
-//	  bool tes2_check = atTargetPosition(tes2, position_ekf, tolerance, 1);
-//	  bool tes3_check = atTargetPosition(tes3, position_ekf, tolerance, 1);
+	  bool blue_storage_check = atTargetEG(blue_storage, position, tolerance+300, 1);
+	  bool blue_silo_check = atTargetEG(blue_silo, position, tolerance+300, 1);
 
 	  switch(mode)
 	  {
 	  case BLUE_STEP1:
 		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
-		  PID_EG(blue_step1, 1.1, 0.0, 0.0, 2.5, 0.8, 4000);
+		  PID_EG(blue_step1, 1.2, 0.0, 0.0, 2.5, 0.8, 4000);
 		  if(blue_step1_check)
 		  {
 			  mode = BLUE_STEP2;
@@ -364,7 +371,7 @@ int main(void)
 		  PID_EG(blue_step3, 1.5, 0.0, 0.0, 2.5, 0.8, 3500);
 		  if(blue_step3_check)
 		  {
-			  mode = VOID;
+			  mode = BLUE_STORAGE;
 		  }
 		  break;
 	  case BLUE_STEP4:
@@ -372,16 +379,47 @@ int main(void)
 		  PID_EG(blue_step4, 1.0, 0.0, 0.0, 1.0, 0.8, 1500);
 		  if(blue_step4_check)
 		  {
-			  mode = VOID;
+			  mode = BLUE_STORAGE;
 		  }
 		  break;
 	  case BLUE_STORAGE:
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
+		  setMotorSpeed(1, 0);
+		  setMotorSpeed(2, 0);
+		  setMotorSpeed(7, 0);
+		  PID_EG(blue_storage, 1.8, 0.0, 0.0, 1.5, 0.7, 3500);
+		  if(blue_storage_check)
+		  {
+			  mode = BLUE_FIND_BALL;
+		  }
 		  break;
 	  case BLUE_FIND_BALL:
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
+		  findAndTakeBall(blueBall);
+		  if(sensorMEGA[3] == 0)
+		  {
+			  mode = BLUE_FACING_SILO;
+		  }
 		  break;
 	  case BLUE_FACING_SILO:
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
+		  servo_write(120);
+		  PID_EG(blue_silo, 1.8, 0.0, 0.0, 1.5, 0.8, 3000);
+		  if(blue_silo_check)
+		  {
+			  mode = BLUE_FIND_SILO;
+		  }
 		  break;
 	  case BLUE_FIND_SILO:
+		  placeBallInSilo(blue_silo, 1.3, 0.0, 0.0, 1.5);
+		  if((FL_distance > 0 && FL_distance <= 10) || (FR_distance > 0 && FR_distance <= 10))
+		  {
+			  setMotorSpeed(1, -2000);
+			  setMotorSpeed(2, -2500);
+			  setMotorSpeed(7, -3000);
+			  HAL_Delay(3000);
+			  mode = BLUE_STORAGE;
+		  }
 		  break;
 	  case RED_STEP1:
 		  break;

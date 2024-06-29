@@ -8,8 +8,8 @@ Motor motors[NUM_MOTORS] =
         {GPIOC, GPIO_PIN_14, GPIOC, GPIO_PIN_15, TIM_CHANNEL_1, &htim1},	//1
         {GPIOE, GPIO_PIN_6, GPIOC, GPIO_PIN_13, TIM_CHANNEL_2, &htim8},		//2
         {GPIOE, GPIO_PIN_4, GPIOE, GPIO_PIN_5, TIM_CHANNEL_3, &htim1},		//3
-        {GPIOD, GPIO_PIN_0, GPIOC, GPIO_PIN_12, TIM_CHANNEL_4, &htim8},		//4
-        {GPIOE, GPIO_PIN_2, GPIOE, GPIO_PIN_3, TIM_CHANNEL_1, &htim8},		//5
+        {GPIOC, GPIO_PIN_12, GPIOD, GPIO_PIN_0, TIM_CHANNEL_4, &htim8},		//4
+        {GPIOE, GPIO_PIN_3, GPIOE, GPIO_PIN_2, TIM_CHANNEL_1, &htim8},		//5
         {GPIOD, GPIO_PIN_1, GPIOD, GPIO_PIN_2, TIM_CHANNEL_2, &htim1},		//6
         {GPIOE, GPIO_PIN_1, GPIOE, GPIO_PIN_0, TIM_CHANNEL_3, &htim8},		//7
         {GPIOC, GPIO_PIN_4, GPIOC, GPIO_PIN_5, TIM_CHANNEL_4, &htim1},		//8
@@ -159,8 +159,8 @@ void murni(double Vx, double Vy, double W)
 void putar(int Vx, int Vy, int W)
 {
      double R = 7.6;
-     int minSpeed = 100;
-     int maxSpeed = 500;
+     int minSpeed = 750;
+     int maxSpeed = 1000;
 
      double M1 = -sin(1 * M_PI_4) * Vx + cos(1 * M_PI_4) * Vy - R * W;
      double M2 = -sin(3 * M_PI_4) * Vx + cos(3 * M_PI_4) * Vy - R * W;
@@ -172,8 +172,8 @@ void putar(int Vx, int Vy, int W)
      double V3 = (M3 > minSpeed || M3 < -minSpeed) ? fmin(fmax(M3, -maxSpeed), maxSpeed) : ((M3 < -0) ? -minSpeed : ((M3 > 0) ? minSpeed : 0));
      double V4 = (M4 > minSpeed || M4 < -minSpeed) ? fmin(fmax(M4, -maxSpeed), maxSpeed) : ((M4 < -0) ? -minSpeed : ((M4 > 0) ? minSpeed : 0));
 
-     setMotorSpeed(6, V1);
-     setMotorSpeed(8, V2);
-     setMotorSpeed(4, V3);
-     setMotorSpeed(5, V4);
+     setMotorSpeed(6, (int)V1);
+     setMotorSpeed(5, (int)V2);
+     setMotorSpeed(4, (int)V3);
+     setMotorSpeed(8, (int)V4);
 }
