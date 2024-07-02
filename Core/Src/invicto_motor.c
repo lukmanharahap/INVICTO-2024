@@ -66,10 +66,55 @@ void Inverse_Kinematics(double Vx, double Vy, double W)
     double minThreshold = 1000;
     double wheelMaxSpeed = 5500;
 
-    double M1 = (-sin(M_PI_4) * Vx + cos(M_PI_4) * Vy - R * W)*1.016985; // 1.016985
-    double M2 = (-sin(3 * M_PI_4) * Vx + cos(3 * M_PI_4) * Vy - R * W);
-    double M3 = (-sin(5 * M_PI_4) * Vx + cos(5 * M_PI_4) * Vy - R * W)*1.05296; // 1.05296
-    double M4 = (-sin(7 * M_PI_4) * Vx + cos(7 * M_PI_4) * Vy - R * W)*0.95038; // 0.95038
+    double M1 = (-sin(M_PI_4) * Vx * 1.25 + cos(M_PI_4) * Vy - R * W);
+    double M2 = (-sin(3 * M_PI_4) * Vx * 1.4 + cos(3 * M_PI_4) * Vy - R * W);
+    double M3 = (-sin(5 * M_PI_4) * Vx + cos(5 * M_PI_4) * Vy - R * W); //0.952702703
+    double M4 = (-sin(7 * M_PI_4) * Vx + cos(7 * M_PI_4) * Vy - R * W); // 0.893632381
+
+    double maxM = fmax(fabs(M1), fmax(fabs(M2), fmax(fabs(M3), fabs(M4))));
+
+    if (maxM > wheelMaxSpeed) {
+        double scale = wheelMaxSpeed / maxM;
+        M1 *= scale;
+        M2 *= scale;
+        M3 *= scale;
+        M4 *= scale;
+    }
+
+    double V1 = (fabs(M1) > minThreshold) ? M1 : (M1 < 0) ? -minThreshold : ((M1 > 0) ? minThreshold : 0);
+    double V2 = (fabs(M2) > minThreshold) ? M2 : (M2 < 0) ? -minThreshold : ((M2 > 0) ? minThreshold : 0);
+    double V3 = (fabs(M3) > minThreshold) ? M3 : (M3 < 0) ? -minThreshold : ((M3 > 0) ? minThreshold : 0);
+    double V4 = (fabs(M4) > minThreshold) ? M4 : (M4 < 0) ? -minThreshold : ((M4 > 0) ? minThreshold : 0);
+
+    setMotorSpeed(6, (int)V1);
+    setMotorSpeed(5, (int)V2);
+    setMotorSpeed(4, (int)V3);
+    setMotorSpeed(8, (int)V4);
+}
+
+void trying(double Vx, double Vy, double W, double desiredHeading, double KpH)
+{
+	external_global currentPosition = odometry_eg();
+
+    double R = 7.6;
+    double minThreshold = 1000;
+    double wheelMaxSpeed = 5500;
+
+    // Read current heading
+    double yaw = currentPosition.h;
+
+    // Calculate heading error
+    double headingError = desiredHeading - yaw;
+    if (headingError > 180) headingError -= 360;
+    if (headingError < -180) headingError += 360;
+
+    // Adjust rotational speed based on heading error
+    W += KpH * headingError; // KpH is a heading correction gain
+
+    double M1 = (-sin(M_PI_4) * Vx * 1.25 + cos(M_PI_4) * Vy - R * W);
+    double M2 = (-sin(3 * M_PI_4) * Vx * 1.4 + cos(3 * M_PI_4) * Vy - R * W);
+    double M3 = (-sin(5 * M_PI_4) * Vx + cos(5 * M_PI_4) * Vy - R * W);
+    double M4 = (-sin(7 * M_PI_4) * Vx + cos(7 * M_PI_4) * Vy - R * W);
 
     double maxM = fmax(fabs(M1), fmax(fabs(M2), fmax(fabs(M3), fabs(M4))));
 
@@ -99,9 +144,9 @@ void right(double Vx, double Vy, double W)
     double wheelMaxSpeed = 5500;
 
     double M1 = (-sin(M_PI_4) * Vx + cos(M_PI_4) * Vy - R * W);
-    double M2 = (-sin(3 * M_PI_4) * Vx + cos(3 * M_PI_4) * Vy - R * W)*0.88108095263;
-    double M3 = (-sin(5 * M_PI_4) * Vx + cos(5 * M_PI_4) * Vy - R * W)*1.01886343711;
-    double M4 = (-sin(7 * M_PI_4) * Vx + cos(7 * M_PI_4) * Vy - R * W)*0.8813081062;
+    double M2 = (-sin(3 * M_PI_4) * Vx + cos(3 * M_PI_4) * Vy - R * W);
+    double M3 = (-sin(5 * M_PI_4) * Vx + cos(5 * M_PI_4) * Vy - R * W)*1.1059674776;
+    double M4 = (-sin(7 * M_PI_4) * Vx + cos(7 * M_PI_4) * Vy - R * W)*0.8789318513;
 
     double maxM = fmax(fabs(M1), fmax(fabs(M2), fmax(fabs(M3), fabs(M4))));
 
@@ -159,7 +204,7 @@ void murni(double Vx, double Vy, double W)
 void putar(int Vx, int Vy, int W)
 {
      double R = 7.6;
-     int minSpeed = 750;
+     int minSpeed = 650;
      int maxSpeed = 1000;
 
      double M1 = -sin(1 * M_PI_4) * Vx + cos(1 * M_PI_4) * Vy - R * W;

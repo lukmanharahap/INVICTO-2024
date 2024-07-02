@@ -1,6 +1,7 @@
 ../Core/Src/invicto_motor.c:20:6:motorDirection	24	static
 ../Core/Src/invicto_motor.c:44:6:setMotorSpeed	40	static
 ../Core/Src/invicto_motor.c:63:6:Inverse_Kinematics	240	static
-../Core/Src/invicto_motor.c:95:6:right	240	static
-../Core/Src/invicto_motor.c:127:6:murni	240	static
-../Core/Src/invicto_motor.c:159:6:putar	120	static
+../Core/Src/invicto_motor.c:95:6:trying	296	static
+../Core/Src/invicto_motor.c:140:6:right	240	static
+../Core/Src/invicto_motor.c:172:6:murni	240	static
+../Core/Src/invicto_motor.c:204:6:putar	120	static

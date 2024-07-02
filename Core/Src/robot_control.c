@@ -95,31 +95,31 @@ double limitAcceleration(double currentVelocity, double targetVelocity, double m
     return targetVelocity;
 }
 
-bool atTargetEG(external_global setpoint, external_global position, double xyTolerance, double Htolerance)
+bool atTargetEG(external_global setpoint, external_global position, double xyTolerance, double hTolerance)
 {
 	double error_x = setpoint.x - position.x;
 	double error_y = setpoint.y - position.y;
 	double error_h = fabs(setpoint.h - position.h);
 	double distance = hypot(error_x, error_y);
-	return distance < xyTolerance && error_h < Htolerance;
+	return distance < xyTolerance && error_h < hTolerance;
 }
 
-bool atTargetEL(external_local setpoint, external_local position, double xyTolerance, double Htolerance)
+bool atTargetEL(external_local setpoint, external_local position, double xyTolerance, double hTolerance)
 {
 	double error_x = setpoint.x - position.x;
 	double error_y = setpoint.y - position.y;
 	double error_h = fabs(setpoint.h - position.h);
 	double distance = hypot(error_x, error_y);
-	return distance < xyTolerance && error_h < Htolerance;
+	return distance < xyTolerance && error_h < hTolerance;
 }
 
-bool atTargetPosition(EKF setpoint, EKF position, double xyTolerance, double Htolerance)
+bool atTargetPosition(EKF setpoint, EKF position, double xyTolerance, double hTolerance)
 {
 	double error_x = setpoint.x - position.x;
 	double error_y = setpoint.y - position.y;
 	double error_h = fabs(setpoint.h - position.h);
 	double distance = hypot(error_x, error_y);
-	return distance < xyTolerance && error_h < Htolerance;
+	return distance < xyTolerance && error_h < hTolerance;
 }
 
 void lookForTheBall(double targetAngle1, double targetAngle2, double currentAngle)
@@ -182,7 +182,8 @@ void PID_EG(external_global setpoint, double Kp, double Ki, double Kd, double Kp
     else			{Vy -= pitch;}
 
     smoothVelocity(&Vx, &Vy, &W, smoothingFactor);
-    Inverse_Kinematics(Vx, Vy, W);
+    trying(Vx, Vy, W, setpoint.h, KpH);
+//    Inverse_Kinematics(Vx, Vy, W);
 }
 
 void PID_EL(external_local setpoint, double Kp, double Ki, double Kd, double KpH, double smoothingFactor, double maxVelocity)
@@ -341,42 +342,47 @@ void PID_KFtocoordinate(EKF setpoint, double Kp, double Ki, double Kd, double Kp
     Inverse_Kinematics(Vx, Vy, W);
 }
 
-void PID_moveToCoordinate(EKF *setpoint, double Kp, double Ki, double Kd, double KpH, double tolerance, double maxVelocity)
+void PID_moveToCoordinate(external_global *setpoint, PID_parameter *parameters, uint16_t numPoints)
 {
-    static uint8_t index = 0;
-    uint16_t amount = sizeof(setpoint);
-    if (index >= amount)
-    {
-        Inverse_Kinematics(0, 0, 0); // Stop the robot
-        return;
-    }
+	static uint8_t thread = 0;
+	if(thread >= numPoints)
+	{
+		Inverse_Kinematics(0, 0, 0);
+		return;
+	}
+	external_global currentPosition = odometry_eg();
 
-    EKF currentPosition = extendedKalmanFilter();
+	double pitch = sensorData[1] * 300; // IMU pitch
+	double roll = sensorData[2] * 300; // IMU roll
 
-    double error_x = setpoint[index].x - currentPosition.x;
-    double error_y = setpoint[index].y - currentPosition.y;
-
-    double heading = atan2(error_y, error_x);
+    double error_x = setpoint[thread].x - currentPosition.x;
+    double error_y = setpoint[thread].y - currentPosition.y;
     double current_heading_rad = currentPosition.h * M_PI / 180.0;
-    double heading_rad = heading - current_heading_rad;
 
     double distance = hypot(error_x, error_y);
-    double velocityFactor = fmin(distance, maxVelocity) / distance;
+    double velocityFactor = fmin(distance, parameters[thread].maxVelocity) / distance;
 
-    double Vx_local = fabs(PID_controller(setpoint[index].x, currentPosition.x, Kp, Ki, Kd)) * cos(heading_rad) * velocityFactor;
-    double Vy_local = fabs(PID_controller(setpoint[index].y, currentPosition.y, Kp, Ki, Kd)) * sin(heading_rad) * velocityFactor;
+    double Vx_local = PID_controller(setpoint[thread].x, currentPosition.x, parameters[thread].KP, parameters[thread].KI, parameters[thread].KD) * velocityFactor;
+    double Vy_local = PID_controller(setpoint[thread].y, currentPosition.y, parameters[thread].KP, parameters[thread].KI, parameters[thread].KD) * velocityFactor;
 
     double Vx = Vx_local * cos(current_heading_rad) - Vy_local * sin(current_heading_rad);
     double Vy = Vx_local * sin(current_heading_rad) + Vy_local * cos(current_heading_rad);
-    double W = PID_controllerH(setpoint[index].h, currentPosition.h, KpH);
+    double W = PID_controllerH(setpoint[thread].h, currentPosition.h, parameters[thread].KpH);
 
-    if (atTargetPosition(setpoint[index], currentPosition, tolerance, 1))
+    if(roll > 0)	{Vx -= roll;}
+    else			{Vx += roll;}
+    if(pitch > 0)	{Vy += pitch;}
+    else			{Vy -= pitch;}
+
+    if(atTargetEG(setpoint[thread], currentPosition, parameters[thread].xyTolerance, parameters[thread].hTolerance))
     {
-        index++;
+    	thread++;
     }
     else
     {
-        Inverse_Kinematics(Vx, Vy, W);
+		smoothVelocity(&Vx, &Vy, &W, parameters[thread].smoothingFactor);
+		trying(Vx, Vy, W, setpoint[thread].h, parameters[thread].KpH);
+//		Inverse_Kinematics(Vx, Vy, W);
     }
 }
 
@@ -485,8 +491,8 @@ void initializeSilos()
         silos[i].angle = SILO_NOT_DETECTED_ANGLE;
         silos[i].detected = false;
         silos[i].ballInSilo = 0;
-        silos[i].x = silos[i].distance * sin(silos[i].angle * M_PI/180);
-        silos[i].y = silos[i].distance * cos(silos[i].angle * M_PI/180);
+        silos[i].x = silos[i].distance * sin(silos[i].angle * M_PI/180.0);
+        silos[i].y = silos[i].distance * cos(silos[i].angle * M_PI/180.0);
     }
 }
 
@@ -502,10 +508,7 @@ Silo detectAndStoreSilo()
     int siloDistances[MAX_SILOS] = {camera[3] * 10, camera[5] * 10, camera[7] * 10, camera[9] * 10, camera[11] * 10}; // convert to mm
     int siloAngles[MAX_SILOS] = {camera[4], camera[6], camera[8], camera[10], camera[12]};
 
-//    int ballDistance = camera[0] * 10; // convert to mm
-//    int ballAngle = camera[1];
-    int ballExistence = camera[2];
-//    double xBall = position.x_global + ballDistance * sin(ballAngle * M_PI / 180.0);
+    int ballExistence[5] = {camera[13], camera[14], camera[15], camera[16], camera[17]};
 
     for (int i = 0; i < MAX_SILOS; i++)
     {
@@ -514,13 +517,14 @@ Silo detectAndStoreSilo()
             silos[i].distance = siloDistances[i];
             silos[i].angle = siloAngles[i];
             silos[i].detected = true;
-            silos[i].ballInSilo = ballExistence;
+            silos[i].ballInSilo = ballExistence[i];
+
             // Calculate global coordinates of the detected silo
             silos[i].x = position.x + siloDistances[i] * sin(siloAngles[i] * M_PI / 180.0);
             silos[i].y = position.y + siloDistances[i] * cos(siloAngles[i] * M_PI / 180.0);
 
             // Check if this is the nearest silo
-            if (silos[i].distance < bestSilo.distance)
+            if (silos[i].ballInSilo < 1)
             {
                 bestSilo = silos[i];
             }
@@ -533,7 +537,7 @@ Silo detectAndStoreSilo()
     return bestSilo;
 }
 
-void placeBallInSilo(external_global setpoint, double Kp, double Ki, double Kd, double KpH)
+void placeBallInSilo(external_global setpoint, double Kp, double Ki, double Kd, double KpH, double smoothingFactor, double maxVelocity)
 {
     external_global position = odometry_eg();
     Silo bestSilo = detectAndStoreSilo();
@@ -546,25 +550,33 @@ void placeBallInSilo(external_global setpoint, double Kp, double Ki, double Kd, 
     setMotorSpeed(2, 0);
     setMotorSpeed(7, 0);
 
-    if(bestSilo.detected && bestSilo.ballInSilo < 3)
+    if(bestSilo.detected)
     {
         double targetX = bestSilo.x;
         double targetY = bestSilo.y;
     //    double targetH = atan2(targetY - position.y_global, targetX - position.x_global) * 180.0 / M_PI;
 
-        Vx = PID_controller(targetX, position.x, Kp, Ki, Kd);
-        Vy = PID_controller(targetY, position.y, Kp, Ki, Kd);
-        W = PID_controllerH(90.0, position.h, KpH);
+        double error_x = targetX - position.x;
+        double error_y = targetY - position.y;
 
-        if(bestSilo.distance <= 400) {Vx = 0; Vy = 1000; W = 0;}
+        double distance = hypot(error_x, error_y);
+        double velocityFactor = fmin(distance, maxVelocity) / distance;
 
-        smoothVelocity(&Vx, &Vy, &W, 0.7);
-        Inverse_Kinematics(Vx, Vy, W);
+        Vx = PID_controller(targetX, position.x, Kp, Ki, Kd) * velocityFactor;
+        Vy = PID_controller(targetY, position.y, Kp+0.5, Ki, Kd) * velocityFactor;
+        W = PID_controllerH(setpoint.h, position.h, KpH);
+
+        if(bestSilo.distance <= 400) {Vx = 0; Vy = 2000; W = 0;}
+
+        smoothVelocity(&Vx, &Vy, &W, smoothingFactor);
+//        Inverse_Kinematics(Vx, Vy, W);
+        trying(Vx, Vy, W, setpoint.h, KpH);
         lastTime = timer;
     }
     else if(timer - lastTime <= 1600)
     {
-        Inverse_Kinematics(0, 2000, 0);
+//        Inverse_Kinematics(0, 2000, 0);
+    	trying(0, 2000, 0, setpoint.h, KpH);
     }
     else
     {
@@ -607,11 +619,11 @@ void findAndTakeBall(external_global *findBall)
         double xBall = ballDistance * sin(ballAngle * M_PI / 180.0);
         double yBall = ballDistance * cos(ballAngle * M_PI / 180.0);
 
-        Vx = PID_controller(xBall, 0.0, 1.0, 0.0, 0.0);
-        Vy = PID_controller(yBall, 0.0, 1.4, 0.0, 0.0);
-        W = PID_controllerH(ballAngle, 0.0, 1.0);
+        Vx = PID_controller(xBall, 0.0, 1.5, 0.0, 0.0);
+        Vy = PID_controller(yBall, 0.0, 2.0, 0.0, 0.0);
+        W = PID_controllerH(ballAngle, 0.0, 1.5);
 
-        if(ballDistance <= 400) {Vx = 0; Vy = 1000; W = 0;}
+        if(ballDistance <= 400) {Vx = 0; Vy = 2000; W = 0;}
 
         Inverse_Kinematics(Vx, Vy, W);
         setMotorSpeed(1, -2000);
@@ -714,6 +726,23 @@ void findAndTakeBall(external_global *findBall)
 //            }
 //        }
     }
+}
+
+void throwTheBall(external_global whereTo, double Kp, double Ki, double Kd, double KpH)
+{
+	external_global position = odometry_eg();
+
+	if(atTargetEG(whereTo, position, 400, 5))
+	{
+		  setMotorSpeed(1, -2000);
+		  setMotorSpeed(2, -2000);
+		  setMotorSpeed(7, -2000);
+		  HAL_Delay(2500);
+	}
+	else
+	{
+		PID_EG(whereTo, Kp, Ki, Kd, KpH, 0.7, 2800);
+	}
 }
 
 void displaySilo()

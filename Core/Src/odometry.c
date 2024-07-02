@@ -231,7 +231,6 @@ StateVector stateTransition(StateVector X)
 MeasurementVector measurementFunction(StateVector X)
 {
     MeasurementVector Z;
-
     Z.x = X.x;
     Z.y = X.y;
     Z.theta = X.theta;

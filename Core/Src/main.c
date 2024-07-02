@@ -29,23 +29,31 @@
 typedef enum
 {
 	VOID,
-	BLUE_STEP1,
-	BLUE_STEP2,
-	BLUE_STEP3,
-	BLUE_STEP4,
-	BLUE_STORAGE,
-	BLUE_FIND_BALL,
-	BLUE_FACING_SILO,
-	BLUE_FIND_SILO,
-	RED_STEP1,
-	RED_STEP2,
-	RED_STEP3,
-	RED_STEP4,
+
+	RED_STEP,
 	RED_STORAGE,
 	RED_FIND_BALL,
 	RED_FACING_SILO,
 	RED_FIND_SILO,
-	TES
+	RED_RETRY,
+	RED_RETRY_STORAGE,
+	RED_RETRY_FIND_BALL,
+	RED_RETRY_FACING_SILO,
+	RED_RETRY_FIND_SILO,
+
+	BLUE_STEP,
+	BLUE_STORAGE,
+	BLUE_FIND_BALL,
+	BLUE_FACING_SILO,
+	BLUE_FIND_SILO,
+	BLUE_RETRY,
+	BLUE_RETRY_STORAGE,
+	BLUE_RETRY_FIND_BALL,
+	BLUE_RETRY_FACING_SILO,
+	BLUE_RETRY_FIND_SILO,
+
+	TES,
+	TES2
 } movingState;
 /* USER CODE END PTD */
 
@@ -85,7 +93,7 @@ double sensorData[3];
  * Data from camera:
  * index 0 -> Ball Distance
  * index 1 -> Ball Angle
- * index 2 -> Ball Existence
+ * index 2 -> Ball Existence -> Diubah jadi cek bola di dalam robot (0 gak ada bola, 1 ada bola)
  * index 3 -> Silo 1 Distance
  * index 4 -> Silo 1 Angle
  * index 5 -> Silo 2 Distance
@@ -96,6 +104,11 @@ double sensorData[3];
  * index 10 -> Silo 4 Angle
  * index 11 -> Silo 5 Distance
  * index 12 -> Silo 5 Angle
+ * index 13 -> Silo 1 is full?
+ * index 14 -> Silo 2 is full?
+ * index 15 -> Silo 3 is full?
+ * index 16 -> Silo 4 is full?
+ * index 17 -> Silo 5 is full?
  *
  * Default distance for silo if its not detected is 9999
  * Default angle for silo if its not detected is 999
@@ -103,7 +116,7 @@ double sensorData[3];
 uint8_t receiveCAM[50];
 uint32_t indexCAM = 0;
 uint32_t dataindexCAM = 0;
-int camera[13];
+int camera[18];
 
 /*   Arduino Mega   */
 /*
@@ -179,8 +192,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	// BUTTON
 	else if((GPIO_Pin == Button_1_Pin) && (HAL_GPIO_ReadPin(Button_1_GPIO_Port, Button_1_Pin) == GPIO_PIN_RESET))
 	{
-		mode = mode + BLUE_STEP1;
-		if(mode > BLUE_STEP1)
+		mode = mode + RED_STEP;
+		if(mode > RED_STEP)
 		{
 			mode = VOID;
 		}
@@ -188,8 +201,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	}
 	else if((GPIO_Pin == Button_2_Pin) && (HAL_GPIO_ReadPin(Button_2_GPIO_Port, Button_2_Pin) == GPIO_PIN_RESET))
 	{
-		mode = mode + BLUE_STEP1;
-		if(mode > BLUE_STEP1)
+		mode = mode + RED_RETRY;
+		if(mode > RED_RETRY)
 		{
 			mode = VOID;
 		}
@@ -197,8 +210,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	}
 	else if((GPIO_Pin == Button_3_Pin) && (HAL_GPIO_ReadPin(Button_3_GPIO_Port, Button_3_Pin) == GPIO_PIN_RESET))
 	{
-		mode = mode + BLUE_STORAGE;
-		if(mode > BLUE_STORAGE)
+		mode = mode + BLUE_STEP;
+		if(mode > BLUE_STEP)
 		{
 			mode = VOID;
 		}
@@ -206,8 +219,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	}
 	else if((GPIO_Pin == Button_4_Pin) && (HAL_GPIO_ReadPin(Button_4_GPIO_Port, Button_4_Pin) == GPIO_PIN_RESET))
 	{
-		mode = mode + BLUE_STORAGE;
-		if(mode > BLUE_STORAGE)
+		mode = mode + BLUE_RETRY;
+		if(mode > BLUE_RETRY)
 		{
 			mode = VOID;
 		}
@@ -308,22 +321,118 @@ int main(void)
   }
 
   initializeSilos();
-  external_global blue_step1 = {0.0, 6000.0, 0.0};
-  external_global blue_step2 = {3770.0, 6000.0, 0.0};
-  external_global blue_step3 = {3770.0, 9500.0, 0.0};
-  external_global blue_step4 = {3770.0, 9500.0, -90.0};
-  external_global blue_storage = {1100.0, 9500.0, 0.0};
-  external_global blue_silo = {3700.0, 9500.0, 90.0};
-  external_global blueBall[3] = {
-		  {700.0, 9500.0, -90.0},
-		  {700.0, 10500.0, -179.0},
-		  {700.0, 8500.0, 0.0}
+
+  external_global red_step[3] = {
+		  {0.0, 6200.0, 0.0},
+		  {3750.0, 6200.0, 0.0},
+		  {3750.0, 9500.0, 0.0}
+  };
+  external_global red_storage = {1100.0, 9500.0, 0.0};
+  external_global red_silo = {3700.0, 9500.0, 90.0};
+  external_global red_throwBall = {1100.0, 8500.0, -179.0};
+
+  external_global redBall[3] = {
+		  {1150.0, 9500.0, -90.0},
+		  {1150.0, 10500.0, -179.0},
+		  {1150.0, 8500.0, 0.0}
   };
 
-//  external_global blue_storage = {-2600.0, 0.0, 0.0};
-//  external_global blue_silo = {0.0, 0.0, 90.0};
+  external_global red_retry[4] = {
+		  {500.0, 0.0, 0.0},
+		  {500.0, 1000.0, 0.0},
+		  {3830.0, 1000.0, 0.0},
+		  {3830.0, 4300.0, 0.0}
+  };
+  external_global red_retry_storage = {1100.0, 4300.0, 0.0};
+  external_global red_retry_silo = {3750.0, 4300.0, 90.0};
+  external_global red_retry_throwBall = {1100.0, 3300.0, -179.0};
 
-  double tolerance = 200.0;
+  external_global redRetryBall[3] = {
+		  {1650.0, 4300.0, -90.0},
+		  {1650.0, 5300.0, -179.0},
+		  {1650.0, 3300.0, 0.0}
+  };
+
+
+
+  external_global blue_step[3] = {
+		  {0.0, 6200.0, 0.0},
+		  {-3750.0, 6200.0, 0.0},
+		  {-3750.0, 9500.0, 0.0}
+  };
+  external_global blue_storage = {-1100.0, 9500.0, 0.0};
+  external_global blue_silo = {-3700.0, 9500.0, 90.0};
+  external_global blue_throwBall = {-1100.0, 8500.0, -179.0};
+
+  external_global blueBall[3] = {
+		  {-1150.0, 9500.0, -90.0},
+		  {-1150.0, 10500.0, -179.0},
+		  {-1150.0, 8500.0, 0.0}
+  };
+
+  external_global blue_retry[4] = {
+		  {-500.0, 0.0, 0.0},
+		  {-500.0, 1000.0, 0.0},
+		  {-3830.0, 1000.0, 0.0},
+		  {-3830.0, 4300.0, 0.0}
+  };
+  external_global blue_retry_storage = {-1100.0, 4300.0, 0.0};
+  external_global blue_retry_silo = {-3750.0, 4300.0, 90.0};
+  external_global blue_retry_throwBall = {-1100.0, 3300.0, -179.0};
+
+  external_global blueRetryBall[3] = {
+		  {-1650.0, 4300.0, -90.0},
+		  {-1650.0, 5300.0, -179.0},
+		  {-1650.0, 3300.0, 0.0}
+  };
+
+
+
+  external_global tes = {0.0, 0.0, 0.0};
+  /* PID_parameter
+	double Kp;
+	double Ki;
+	double Kd;
+	double KpH;
+	double smoothingFactor;
+	int maxVelocity;
+	double xyTolerance;
+	double hTolerance;
+   */
+  PID_parameter red_step_parameters[3] = {
+		  {1.25, 0.0, 0.0, 2.5, 0.8, 3000, 200, 2},
+		  {1.8, 0.0, 0.0, 3.5, 0.75, 3500, 200, 1},
+		  {1.5, 0.0, 0.0, 2.5, 0.8, 3500, 200, 5}
+  };
+
+  PID_parameter red_retry_parameters[4] = {
+		  {5.0, 0.0, 0.0, 2.5, 0.8, 2500, 200, 2},
+		  {2.6, 0.0, 0.0, 2.5, 0.75, 2500, 200, 2},
+		  {1.8, 0.0, 0.0, 3.0, 0.75, 3500, 200, 1},
+		  {1.5, 0.0, 0.0, 2.8, 0.8, 3500, 200, 5}
+  };
+
+  uint16_t red_step_numPoints = sizeof(red_step) / sizeof(red_step[0]);
+  uint16_t red_retry_numPoints = sizeof(red_retry) / sizeof(red_retry[0]);
+
+
+
+  PID_parameter blue_step_parameters[3] = {
+		  {1.25, 0.0, 0.0, 2.5, 0.8, 3000, 200, 2},
+		  {1.8, 0.0, 0.0, 3.5, 0.75, 3500, 200, 1},
+		  {1.5, 0.0, 0.0, 2.5, 0.8, 3500, 200, 5}
+  };
+
+  PID_parameter blue_retry_parameters[4] = {
+		  {5.0, 0.0, 0.0, 2.5, 0.8, 2500, 200, 2},
+		  {2.6, 0.0, 0.0, 2.5, 0.75, 2500, 200, 2},
+		  {1.8, 0.0, 0.0, 3.0, 0.75, 3500, 200, 1},
+		  {1.5, 0.0, 0.0, 2.8, 0.8, 3500, 200, 5}
+  };
+
+  uint16_t blue_step_numPoints = sizeof(blue_step) / sizeof(blue_step[0]);
+  uint16_t blue_retry_numPoints = sizeof(blue_retry) / sizeof(blue_retry[0]);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -336,54 +445,191 @@ int main(void)
 	  int FR_distance = sensorMEGA[2];
 
 	  external_global position = odometry_eg();
-//	  EKF position_ekf = odometry_fusion();
-	  display_EG();
-//	  displayKalman(position_ekf);
-//	  displayCounter();
+//	  displaySilo();
+//	  display_EG();
+	  displayCounter();
 
-	  bool blue_step1_check = atTargetEG(blue_step1, position, tolerance+300, 1);
-	  bool blue_step2_check = atTargetEG(blue_step2, position, tolerance, 1);
-	  bool blue_step3_check = atTargetEG(blue_step3, position, tolerance, 1);
-	  bool blue_step4_check = atTargetEG(blue_step4, position, tolerance, 1);
-	  bool blue_storage_check = atTargetEG(blue_storage, position, tolerance+300, 1);
-	  bool blue_silo_check = atTargetEG(blue_silo, position, tolerance+300, 1);
+	  if(fabs(position.x) > 99999 || fabs(position.y) > 99999)
+	  {
+		  Error_Handler();
+	  }
+
+	  bool red_step_check = atTargetEG(red_step[red_step_numPoints-1], position, 400, 5);
+	  bool red_storage_check = atTargetEG(red_storage, position, 400, 1);
+	  bool red_silo_check = atTargetEG(red_silo, position, 400, 1);
+
+	  bool red_retry_check = atTargetEG(red_retry[red_retry_numPoints-1], position, 400, 5);
+	  bool red_retry_storage_check = atTargetEG(red_retry_storage, position, 400, 1);
+	  bool red_retry_silo_check = atTargetEG(red_retry_silo, position, 400, 1);
+
+
+	  bool blue_step_check = atTargetEG(blue_step[blue_step_numPoints-1], position, 400, 5);
+	  bool blue_storage_check = atTargetEG(blue_storage, position, 400, 1);
+	  bool blue_silo_check = atTargetEG(blue_silo, position, 400, 1);
+
+	  bool blue_retry_check = atTargetEG(blue_retry[blue_retry_numPoints-1], position, 400, 5);
+	  bool blue_retry_storage_check = atTargetEG(blue_retry_storage, position, 400, 1);
+	  bool blue_retry_silo_check = atTargetEG(blue_retry_silo, position, 400, 1);
 
 	  switch(mode)
 	  {
-	  case BLUE_STEP1:
+	  case RED_STEP:
 		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
-		  PID_EG(blue_step1, 1.2, 0.0, 0.0, 2.5, 0.8, 4000);
-		  if(blue_step1_check)
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
+
+		  PID_moveToCoordinate(red_step, red_step_parameters, red_step_numPoints);
+		  if(red_step_check)
 		  {
-			  mode = BLUE_STEP2;
+			  mode = RED_STORAGE;
 		  }
 		  break;
-	  case BLUE_STEP2:
+
+	  case RED_STORAGE:
 		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
-		  PID_EG(blue_step2, 1.9, 0.0, 0.0, 2.5, 0.9, 5500);
-		  if(blue_step2_check)
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_SET);
+
+		  setMotorSpeed(1, 0);
+		  setMotorSpeed(2, 0);
+		  setMotorSpeed(7, 0);
+		  PID_EG(red_storage, 1.8, 0.0, 0.0, 1.5, 0.7, 3500);
+		  if(red_storage_check)
 		  {
-			  mode = BLUE_STEP3;
+			  mode = RED_FIND_BALL;
 		  }
 		  break;
-	  case BLUE_STEP3:
+
+	  case RED_FIND_BALL:
 		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
-		  PID_EG(blue_step3, 1.5, 0.0, 0.0, 2.5, 0.8, 3500);
-		  if(blue_step3_check)
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
+
+		  findAndTakeBall(redBall);
+//		  if(sensorMEGA[3] == 0)
+//		  {
+//			  mode = RED_FACING_SILO;
+//		  }
+		  if(sensorMEGA[3] == 0 && camera[2] == 1)
+		  {
+			  mode = RED_FACING_SILO;
+		  }
+		  else if(sensorMEGA[3] == 0 && camera[2] == 0)
+		  {
+			  throwTheBall(red_throwBall, 1.5, 0.0, 0.0, 1.5);
+		  }
+		  break;
+
+	  case RED_FACING_SILO:
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_SET);
+
+		  servo_write(120);
+		  PID_EG(red_silo, 1.8, 0.0, 0.0, 1.5, 0.8, 3000);
+		  if(red_silo_check)
+		  {
+			  mode = RED_FIND_SILO;
+		  }
+		  break;
+
+	  case RED_FIND_SILO:
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
+
+		  placeBallInSilo(red_silo, 1.5, 0.0, 0.0, 1.5, 0.7, 2500);
+		  if((FL_distance > 0 && FL_distance <= 10) || (FR_distance > 0 && FR_distance <= 10))
+		  {
+			  setMotorSpeed(1, -2000);
+			  setMotorSpeed(2, -2000);
+			  setMotorSpeed(7, -2800);
+			  HAL_Delay(3000);
+			  mode = RED_STORAGE;
+		  }
+		  break;
+
+	  case RED_RETRY:
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
+
+		  PID_moveToCoordinate(red_retry, red_retry_parameters, red_retry_numPoints);
+		  if(red_retry_check)
+		  {
+			  mode = RED_RETRY_STORAGE;
+		  }
+		  break;
+
+	  case RED_RETRY_STORAGE:
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_SET);
+
+		  setMotorSpeed(1, 0);
+		  setMotorSpeed(2, 0);
+		  setMotorSpeed(7, 0);
+		  PID_EG(red_retry_storage, 1.8, 0.0, 0.0, 1.5, 0.7, 3500);
+		  if(red_retry_storage_check)
+		  {
+			  mode = RED_RETRY_FIND_BALL;
+		  }
+		  break;
+
+	  case RED_RETRY_FIND_BALL:
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
+
+		  findAndTakeBall(redRetryBall);
+//		  if(sensorMEGA[3] == 0)
+//		  {
+//			  mode = RED_RETRY_FACING_SILO;
+//		  }
+		  if(sensorMEGA[3] == 0 && camera[2] == 1)
+		  {
+			  mode = RED_RETRY_FACING_SILO;
+		  }
+		  else if(sensorMEGA[3] == 0 && camera[2] == 0)
+		  {
+			  throwTheBall(red_retry_throwBall, 1.5, 0.0, 0.0, 1.5);
+		  }
+		  break;
+
+	  case RED_RETRY_FACING_SILO:
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_SET);
+
+		  servo_write(120);
+		  PID_EG(red_retry_silo, 1.8, 0.0, 0.0, 1.5, 0.8, 3000);
+		  if(red_retry_silo_check)
+		  {
+			  mode = RED_RETRY_FIND_SILO;
+		  }
+		  break;
+
+	  case RED_RETRY_FIND_SILO:
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
+
+		  placeBallInSilo(red_retry_silo, 1.5, 0.0, 0.0, 1.5, 0.7, 2500);
+		  if((FL_distance > 0 && FL_distance <= 10) || (FR_distance > 0 && FR_distance <= 10))
+		  {
+			  setMotorSpeed(1, -2000);
+			  setMotorSpeed(2, -2000);
+			  setMotorSpeed(7, -2800);
+			  HAL_Delay(3000);
+			  mode = RED_RETRY_STORAGE;
+		  }
+		  break;
+
+	  case BLUE_STEP:
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
+
+		  PID_moveToCoordinate(blue_step, blue_step_parameters, blue_step_numPoints);
+		  if(blue_step_check)
 		  {
 			  mode = BLUE_STORAGE;
 		  }
 		  break;
-	  case BLUE_STEP4:
-		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
-		  PID_EG(blue_step4, 1.0, 0.0, 0.0, 1.0, 0.8, 1500);
-		  if(blue_step4_check)
-		  {
-			  mode = BLUE_STORAGE;
-		  }
-		  break;
+
 	  case BLUE_STORAGE:
-		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_SET);
+
 		  setMotorSpeed(1, 0);
 		  setMotorSpeed(2, 0);
 		  setMotorSpeed(7, 0);
@@ -393,16 +639,30 @@ int main(void)
 			  mode = BLUE_FIND_BALL;
 		  }
 		  break;
+
 	  case BLUE_FIND_BALL:
-		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
+
 		  findAndTakeBall(blueBall);
-		  if(sensorMEGA[3] == 0)
+//		  if(sensorMEGA[3] == 0)
+//		  {
+//			  mode = BLUE_FACING_SILO;
+//		  }
+		  if(sensorMEGA[3] == 0 && camera[2] == 1)
 		  {
 			  mode = BLUE_FACING_SILO;
 		  }
+		  else if(sensorMEGA[3] == 0 && camera[2] == 0)
+		  {
+			  throwTheBall(blue_throwBall, 1.5, 0.0, 0.0, 1.5);
+		  }
 		  break;
+
 	  case BLUE_FACING_SILO:
-		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_SET);
+
 		  servo_write(120);
 		  PID_EG(blue_silo, 1.8, 0.0, 0.0, 1.5, 0.8, 3000);
 		  if(blue_silo_check)
@@ -410,37 +670,117 @@ int main(void)
 			  mode = BLUE_FIND_SILO;
 		  }
 		  break;
+
 	  case BLUE_FIND_SILO:
-		  placeBallInSilo(blue_silo, 1.3, 0.0, 0.0, 1.5);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
+
+		  placeBallInSilo(blue_silo, 1.5, 0.0, 0.0, 1.5, 0.7, 2500);
 		  if((FL_distance > 0 && FL_distance <= 10) || (FR_distance > 0 && FR_distance <= 10))
 		  {
 			  setMotorSpeed(1, -2000);
-			  setMotorSpeed(2, -2500);
-			  setMotorSpeed(7, -3000);
+			  setMotorSpeed(2, -2000);
+			  setMotorSpeed(7, -2800);
 			  HAL_Delay(3000);
 			  mode = BLUE_STORAGE;
 		  }
 		  break;
-	  case RED_STEP1:
+
+	  case BLUE_RETRY:
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
+
+		  PID_moveToCoordinate(blue_retry, blue_retry_parameters, blue_retry_numPoints);
+		  if(blue_retry_check)
+		  {
+			  mode = BLUE_RETRY_STORAGE;
+		  }
 		  break;
-	  case RED_STEP2:
+
+	  case BLUE_RETRY_STORAGE:
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_SET);
+
+		  setMotorSpeed(1, 0);
+		  setMotorSpeed(2, 0);
+		  setMotorSpeed(7, 0);
+		  PID_EG(blue_retry_storage, 1.8, 0.0, 0.0, 1.5, 0.7, 3500);
+		  if(blue_retry_storage_check)
+		  {
+			  mode = BLUE_RETRY_FIND_BALL;
+		  }
 		  break;
-	  case RED_STEP3:
+
+	  case BLUE_RETRY_FIND_BALL:
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
+
+		  findAndTakeBall(blueRetryBall);
+//		  if(sensorMEGA[3] == 0)
+//		  {
+//			  mode = BLUE_RETRY_FACING_SILO;
+//		  }
+		  if(sensorMEGA[3] == 0 && camera[2] == 1)
+		  {
+			  mode = BLUE_RETRY_FACING_SILO;
+		  }
+		  else if(sensorMEGA[3] == 0 && camera[2] == 0)
+		  {
+			  throwTheBall(blue_retry_throwBall, 1.5, 0.0, 0.0, 1.5);
+		  }
 		  break;
-	  case RED_STEP4:
+
+	  case BLUE_RETRY_FACING_SILO:
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_SET);
+
+		  servo_write(120);
+		  PID_EG(blue_retry_silo, 1.8, 0.0, 0.0, 1.5, 0.8, 3000);
+		  if(blue_retry_silo_check)
+		  {
+			  mode = BLUE_RETRY_FIND_SILO;
+		  }
 		  break;
-	  case RED_STORAGE:
+
+	  case BLUE_RETRY_FIND_SILO:
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
+
+		  placeBallInSilo(blue_retry_silo, 1.5, 0.0, 0.0, 1.5, 0.7, 2500);
+		  if((FL_distance > 0 && FL_distance <= 10) || (FR_distance > 0 && FR_distance <= 10))
+		  {
+			  setMotorSpeed(1, -2000);
+			  setMotorSpeed(2, -2000);
+			  setMotorSpeed(7, -2800);
+			  HAL_Delay(3000);
+			  mode = BLUE_RETRY_STORAGE;
+		  }
 		  break;
-	  case RED_FIND_BALL:
-		  break;
-	  case RED_FACING_SILO:
-		  break;
-	  case RED_FIND_SILO:
-		  break;
+
 	  case TES:
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
+
+		  placeBallInSilo(tes, 1.5, 0.0, 0.0, 1.5, 0.7, 2500);
+		  if((FL_distance > 0 && FL_distance <= 10) || (FR_distance > 0 && FR_distance <= 10))
+		  {
+			  setMotorSpeed(1, -2000);
+			  setMotorSpeed(2, -2000);
+			  setMotorSpeed(7, -2800);
+			  HAL_Delay(3000);
+			  mode = VOID;
+		  }
+		  break;
+
+	  case TES2:
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
 		  break;
 	  default:
 		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_SET);
+
+//		  trying(2500, 0, 0, 0.0, 3.0);
 		  Inverse_Kinematics(0, 0, 0);
 		  setMotorSpeed(1, 0);
 		  setMotorSpeed(2, 0);
@@ -901,8 +1241,8 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0|GPIO_PIN_1, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14|GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2
-                          |GPIO_PIN_3|GPIO_PIN_4, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14|GPIO_PIN_15|GPIO_PIN_0|GPIO_PIN_1
+                          |GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : PE2 PE3 PE4 PE5
                            PE6 PE0 PE1 */
@@ -944,6 +1284,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : Button_1_Pin */
+  GPIO_InitStruct.Pin = Button_1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(Button_1_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pins : PC4 PC5 PC12 */
   GPIO_InitStruct.Pin = GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_12;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
@@ -958,11 +1304,17 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : Button_1_Pin Button_2_Pin Button_3_Pin */
-  GPIO_InitStruct.Pin = Button_1_Pin|Button_2_Pin|Button_3_Pin;
+  /*Configure GPIO pins : Button_2_Pin Button_3_Pin */
+  GPIO_InitStruct.Pin = Button_2_Pin|Button_3_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : Button_4_Pin */
+  GPIO_InitStruct.Pin = Button_4_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(Button_4_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : EinA_3_Pin */
   GPIO_InitStruct.Pin = EinA_3_Pin;
@@ -976,18 +1328,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(EinB_3_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PD14 */
-  GPIO_InitStruct.Pin = GPIO_PIN_14;
+  /*Configure GPIO pins : PD14 PD15 */
+  GPIO_InitStruct.Pin = GPIO_PIN_14|GPIO_PIN_15;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : Button_4_Pin */
-  GPIO_InitStruct.Pin = Button_4_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
-  HAL_GPIO_Init(Button_4_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PD0 PD1 PD2 PD3
                            PD4 */
