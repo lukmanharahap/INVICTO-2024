@@ -25,4 +25,5 @@
 ../Core/Src/robot_control.c:540:6:placeBallInSilo	224	static
 ../Core/Src/robot_control.c:587:6:findAndTakeBall	112	static
 ../Core/Src/robot_control.c:731:6:throwTheBall	96	static
-../Core/Src/robot_control.c:748:6:displaySilo	40	static
+../Core/Src/robot_control.c:748:6:displayBall	8	static
+../Core/Src/robot_control.c:767:6:displaySilo	40	static

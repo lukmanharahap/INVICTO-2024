@@ -606,7 +606,7 @@ void findAndTakeBall(external_global *findBall)
 
     int ballDistance = camera[0] * 10; // convert to mm
     int ballAngle = camera[1];
-    int ballExistence = camera[2];
+//    int ballExistence = camera[2];
 
     double Vx = 0.0;
     double Vy = 0.0;
@@ -614,7 +614,7 @@ void findAndTakeBall(external_global *findBall)
 
     focusToTheBall();
 
-    if (ballExistence != 0)
+    if (ballDistance > 0)
     {
         double xBall = ballDistance * sin(ballAngle * M_PI / 180.0);
         double yBall = ballDistance * cos(ballAngle * M_PI / 180.0);
@@ -743,6 +743,25 @@ void throwTheBall(external_global whereTo, double Kp, double Ki, double Kd, doub
 	{
 		PID_EG(whereTo, Kp, Ki, Kd, KpH, 0.7, 2800);
 	}
+}
+
+void displayBall()
+{
+	lcd_set_cursor(0, 0);
+	sprintf(buffCAM, "1:%d", camera[0]);
+	lcd_write_string(buffCAM);
+
+	lcd_set_cursor(1, 0);
+	sprintf(buffCAM, "2:%d", camera[1]);
+	lcd_write_string(buffCAM);
+
+	lcd_set_cursor(2, 0);
+	sprintf(buffCAM, "3:%d", camera[2]);
+	lcd_write_string(buffCAM);
+
+	lcd_set_cursor(3, 0);
+	sprintf(buffCAM, "4:%d", camera[3]);
+	lcd_write_string(buffCAM);
 }
 
 void displaySilo()

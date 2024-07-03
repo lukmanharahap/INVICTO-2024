@@ -13,4 +13,4 @@
 ../Core/Src/odometry.c:365:6:cek	8	static
 ../Core/Src/odometry.c:404:6:displayCounter	8	static
 ../Core/Src/odometry.c:429:6:display_EG	32	static
-../Core/Src/odometry.c:450:6:display_EL	32	static
+../Core/Src/odometry.c:444:6:display_EL	32	static

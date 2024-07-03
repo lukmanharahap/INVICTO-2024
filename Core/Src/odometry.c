@@ -430,20 +430,14 @@ void display_EG()
 {
 	external_global position = odometry_eg();
 
-	lcd_set_cursor(0, 0);
+	lcd_set_cursor(1, 0);
 	sprintf(buffer, "X:%.2f", position.x);
 	lcd_write_string(buffer);
-	lcd_set_cursor(1, 0);
+	lcd_set_cursor(2, 0);
 	sprintf(buffer, "Y:%.2f", position.y);
 	lcd_write_string(buffer);
-	lcd_set_cursor(2, 0);
-	sprintf(buffer, "H:%.2f", position.h);
-	lcd_write_string(buffer);
 	lcd_set_cursor(3, 0);
-	sprintf(buffer, "P:%.2f", sensorData[1]);
-	lcd_write_string(buffer);
-	lcd_set_cursor(3, 10);
-	sprintf(buffer, "R:%.2f", sensorData[2]);
+	sprintf(buffer, "H:%.2f", position.h);
 	lcd_write_string(buffer);
 }
 

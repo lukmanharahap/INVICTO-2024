@@ -149,6 +149,7 @@ static void MX_USART3_UART_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 movingState mode = VOID;
+char buffMode[10];
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
@@ -192,8 +193,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	// BUTTON
 	else if((GPIO_Pin == Button_1_Pin) && (HAL_GPIO_ReadPin(Button_1_GPIO_Port, Button_1_Pin) == GPIO_PIN_RESET))
 	{
-		mode = mode + RED_STEP;
-		if(mode > RED_STEP)
+		mode = mode + 1;
+		if(mode > 22)
 		{
 			mode = VOID;
 		}
@@ -201,8 +202,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	}
 	else if((GPIO_Pin == Button_2_Pin) && (HAL_GPIO_ReadPin(Button_2_GPIO_Port, Button_2_Pin) == GPIO_PIN_RESET))
 	{
-		mode = mode + RED_RETRY;
-		if(mode > RED_RETRY)
+		mode = mode + 1;
+		if(mode > 22)
 		{
 			mode = VOID;
 		}
@@ -210,17 +211,17 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	}
 	else if((GPIO_Pin == Button_3_Pin) && (HAL_GPIO_ReadPin(Button_3_GPIO_Port, Button_3_Pin) == GPIO_PIN_RESET))
 	{
-		mode = mode + BLUE_STEP;
-		if(mode > BLUE_STEP)
+		mode = mode - 1;
+		if(mode < 0)
 		{
-			mode = VOID;
+			mode = 22;
 		}
 		__HAL_GPIO_EXTI_CLEAR_IT(Button_3_Pin);
 	}
 	else if((GPIO_Pin == Button_4_Pin) && (HAL_GPIO_ReadPin(Button_4_GPIO_Port, Button_4_Pin) == GPIO_PIN_RESET))
 	{
-		mode = mode + BLUE_RETRY;
-		if(mode > BLUE_RETRY)
+		mode = mode + 1;
+		if(mode > 22)
 		{
 			mode = VOID;
 		}
@@ -246,6 +247,7 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
+  void displayMode();
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -340,17 +342,17 @@ int main(void)
   external_global red_retry[4] = {
 		  {500.0, 0.0, 0.0},
 		  {500.0, 1000.0, 0.0},
-		  {3830.0, 1000.0, 0.0},
-		  {3830.0, 4300.0, 0.0}
+		  {3800.0, 1000.0, 0.0},
+		  {3800.0, 4300.0, 0.0}
   };
   external_global red_retry_storage = {1100.0, 4300.0, 0.0};
   external_global red_retry_silo = {3750.0, 4300.0, 90.0};
   external_global red_retry_throwBall = {1100.0, 3300.0, -179.0};
 
   external_global redRetryBall[3] = {
-		  {1650.0, 4300.0, -90.0},
-		  {1650.0, 5300.0, -179.0},
-		  {1650.0, 3300.0, 0.0}
+		  {1150.0, 4300.0, -90.0},
+		  {1150.0, 5300.0, -179.0},
+		  {1150.0, 3300.0, 0.0}
   };
 
 
@@ -361,29 +363,29 @@ int main(void)
 		  {-3750.0, 9500.0, 0.0}
   };
   external_global blue_storage = {-1100.0, 9500.0, 0.0};
-  external_global blue_silo = {-3700.0, 9500.0, 90.0};
+  external_global blue_silo = {-3700.0, 9500.0, -90.0};
   external_global blue_throwBall = {-1100.0, 8500.0, -179.0};
 
   external_global blueBall[3] = {
-		  {-1150.0, 9500.0, -90.0},
-		  {-1150.0, 10500.0, -179.0},
-		  {-1150.0, 8500.0, 0.0}
+		  {-1100.0, 9500.0, 90.0},
+		  {-1100.0, 10500.0, -179.0},
+		  {-1100.0, 8500.0, 0.0}
   };
 
   external_global blue_retry[4] = {
 		  {-500.0, 0.0, 0.0},
 		  {-500.0, 1000.0, 0.0},
-		  {-3830.0, 1000.0, 0.0},
-		  {-3830.0, 4300.0, 0.0}
+		  {-3800.0, 1000.0, 0.0},
+		  {-3800.0, 4300.0, 0.0}
   };
-  external_global blue_retry_storage = {-1100.0, 4300.0, 0.0};
-  external_global blue_retry_silo = {-3750.0, 4300.0, 90.0};
-  external_global blue_retry_throwBall = {-1100.0, 3300.0, -179.0};
+  external_global blue_retry_storage = {-1150.0, 4300.0, 0.0};
+  external_global blue_retry_silo = {-3750.0, 4300.0, -90.0};
+  external_global blue_retry_throwBall = {-1100.0, 3300.0, 179.0};
 
   external_global blueRetryBall[3] = {
-		  {-1650.0, 4300.0, -90.0},
-		  {-1650.0, 5300.0, -179.0},
-		  {-1650.0, 3300.0, 0.0}
+		  {-1150.0, 4300.0, 90.0},
+		  {-1150.0, 5300.0, -179.0},
+		  {-1150.0, 3300.0, 0.0}
   };
 
 
@@ -445,9 +447,12 @@ int main(void)
 	  int FR_distance = sensorMEGA[2];
 
 	  external_global position = odometry_eg();
+	  displayMode();
+	  display_EG();
+
 //	  displaySilo();
-//	  display_EG();
-	  displayCounter();
+//	  displayCounter();
+//	  displayBall();
 
 	  if(fabs(position.x) > 99999 || fabs(position.y) > 99999)
 	  {
@@ -1465,6 +1470,83 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 				Error_Handler();
 			}
 		}
+	}
+}
+
+void displayMode()
+{
+	lcd_set_cursor(0, 0);
+	switch (mode)
+	{
+		case RED_STEP:
+			lcd_write_string("R STEP");
+			break;
+		case RED_STORAGE:
+			lcd_write_string("R STORAGE");
+			break;
+		case RED_FIND_BALL:
+			lcd_write_string("R FIND BALL");
+			break;
+		case RED_FACING_SILO:
+			lcd_write_string("R FACING SILO");
+			break;
+		case RED_FIND_SILO:
+			lcd_write_string("R FIND SILO");
+			break;
+		case RED_RETRY:
+			lcd_write_string("R R");
+			break;
+		case RED_RETRY_STORAGE:
+			lcd_write_string("R R STORAGE");
+			break;
+		case RED_RETRY_FIND_BALL:
+			lcd_write_string("R R FIND BALL");
+			break;
+		case RED_RETRY_FACING_SILO:
+			lcd_write_string("R R FACING SILO");
+			break;
+		case RED_RETRY_FIND_SILO:
+			lcd_write_string("R R FIND SILO");
+			break;
+		case BLUE_STEP:
+			lcd_write_string("B STEP");
+			break;
+		case BLUE_STORAGE:
+			lcd_write_string("B STORAGE");
+			break;
+		case BLUE_FIND_BALL:
+			lcd_write_string("B FIND BALL");
+			break;
+		case BLUE_FACING_SILO:
+			lcd_write_string("B FACING SILO");
+			break;
+		case BLUE_FIND_SILO:
+			lcd_write_string("B FIND SILO");
+			break;
+		case BLUE_RETRY:
+			lcd_write_string("B R");
+			break;
+		case BLUE_RETRY_STORAGE:
+			lcd_write_string("B R STORAGE");
+			break;
+		case BLUE_RETRY_FIND_BALL:
+			lcd_write_string("B R FIND BALL");
+			break;
+		case BLUE_RETRY_FACING_SILO:
+			lcd_write_string("B R FACING SILO");
+			break;
+		case BLUE_RETRY_FIND_SILO:
+			lcd_write_string("B R FIND SILO");
+			break;
+		case TES:
+			lcd_write_string("TES");
+			break;
+		case TES2:
+			lcd_write_string("TES2");
+			break;
+		default:
+			lcd_write_string("VOID");
+			break;
 	}
 }
 /* USER CODE END 4 */

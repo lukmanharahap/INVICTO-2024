@@ -56,6 +56,7 @@ Silo detectAndStoreSilo();
 void placeBallInSilo(external_global setpoint, double Kp, double Ki, double Kd, double KpH, double smoothingFactor, double maxVelocity);
 void findAndTakeBall(external_global *findBall);
 void throwTheBall(external_global whereTo, double Kp, double Ki, double Kd, double KpH);
+void displayBall();
 void displaySilo();
 
 #endif

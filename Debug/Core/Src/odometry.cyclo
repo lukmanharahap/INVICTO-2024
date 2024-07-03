@@ -13,4 +13,4 @@
 ../Core/Src/odometry.c:365:6:cek	1
 ../Core/Src/odometry.c:404:6:displayCounter	1
 ../Core/Src/odometry.c:429:6:display_EG	1
-../Core/Src/odometry.c:450:6:display_EL	1
+../Core/Src/odometry.c:444:6:display_EL	1
