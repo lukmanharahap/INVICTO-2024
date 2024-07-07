@@ -24,6 +24,7 @@ typedef struct
 void motorDirection(uint8_t motor, uint8_t direction);
 void setMotorSpeed(uint8_t motor, double speed);
 void Inverse_Kinematics(double Vx, double Vy, double W);
+void left(double Vx, double Vy, double W);
 void trying(double Vx, double Vy, double W, double desiredHeading, double KpH);
 void right(double Vx, double Vy, double W);
 void murni(double Vx, double Vy, double W);

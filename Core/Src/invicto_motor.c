@@ -66,9 +66,41 @@ void Inverse_Kinematics(double Vx, double Vy, double W)
     double minThreshold = 1000;
     double wheelMaxSpeed = 5500;
 
-    double M1 = (-sin(M_PI_4) * Vx * 1.25 + cos(M_PI_4) * Vy - R * W);
-    double M2 = (-sin(3 * M_PI_4) * Vx * 1.4 + cos(3 * M_PI_4) * Vy - R * W);
-    double M3 = (-sin(5 * M_PI_4) * Vx + cos(5 * M_PI_4) * Vy - R * W); //0.952702703
+    double M1 = (-sin(M_PI_4) * Vx + cos(M_PI_4) * Vy - R * W);
+    double M2 = (-sin(3 * M_PI_4) * Vx + cos(3 * M_PI_4) * Vy - R * W);
+    double M3 = (-sin(5 * M_PI_4) * Vx * 0.78 + cos(5 * M_PI_4) * Vy - R * W); //0.952702703
+    double M4 = (-sin(7 * M_PI_4) * Vx + cos(7 * M_PI_4) * Vy - R * W); // 0.893632381
+
+    double maxM = fmax(fabs(M1), fmax(fabs(M2), fmax(fabs(M3), fabs(M4))));
+
+    if (maxM > wheelMaxSpeed) {
+        double scale = wheelMaxSpeed / maxM;
+        M1 *= scale;
+        M2 *= scale;
+        M3 *= scale;
+        M4 *= scale;
+    }
+
+    double V1 = (fabs(M1) > minThreshold) ? M1 : (M1 < 0) ? -minThreshold : ((M1 > 0) ? minThreshold : 0);
+    double V2 = (fabs(M2) > minThreshold) ? M2 : (M2 < 0) ? -minThreshold : ((M2 > 0) ? minThreshold : 0);
+    double V3 = (fabs(M3) > minThreshold) ? M3 : (M3 < 0) ? -minThreshold : ((M3 > 0) ? minThreshold : 0);
+    double V4 = (fabs(M4) > minThreshold) ? M4 : (M4 < 0) ? -minThreshold : ((M4 > 0) ? minThreshold : 0);
+
+    setMotorSpeed(6, (int)V1);
+    setMotorSpeed(5, (int)V2);
+    setMotorSpeed(4, (int)V3);
+    setMotorSpeed(8, (int)V4);
+}
+
+void left(double Vx, double Vy, double W)
+{
+    double R = 7.6;
+    double minThreshold = 1000;
+    double wheelMaxSpeed = 5500;
+
+    double M1 = (-sin(M_PI_4) * Vx + cos(M_PI_4) * Vy - R * W);
+    double M2 = (-sin(3 * M_PI_4) * Vx + cos(3 * M_PI_4) * Vy - R * W);
+    double M3 = (-sin(5 * M_PI_4) * Vx * 0.9 + cos(5 * M_PI_4) * Vy * 1.1 - R * W); //0.952702703
     double M4 = (-sin(7 * M_PI_4) * Vx + cos(7 * M_PI_4) * Vy - R * W); // 0.893632381
 
     double maxM = fmax(fabs(M1), fmax(fabs(M2), fmax(fabs(M3), fabs(M4))));
@@ -204,7 +236,7 @@ void murni(double Vx, double Vy, double W)
 void putar(int Vx, int Vy, int W)
 {
      double R = 7.6;
-     int minSpeed = 650;
+     int minSpeed = 580;
      int maxSpeed = 1000;
 
      double M1 = -sin(1 * M_PI_4) * Vx + cos(1 * M_PI_4) * Vy - R * W;

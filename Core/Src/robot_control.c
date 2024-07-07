@@ -141,7 +141,7 @@ void lookForTheBall(double targetAngle1, double targetAngle2, double currentAngl
             return; // Invalid mode, do nothing
     }
 
-    double W = PID_controllerH(targetAngle, currentAngle, 1.0);
+    double W = PID_controllerH(targetAngle, currentAngle, 0.7);
     putar(0, 0, W);
     if (fabs(targetAngle - currentAngle) < 5.0)
     {
@@ -153,6 +153,36 @@ void servo_write(int angle)
 {
 	int i = map(0, 180, 30, 130, angle);
 	__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4, i);
+}
+
+void PID_left(external_global setpoint, double Kp, double Ki, double Kd, double KpH, double smoothingFactor, double maxVelocity)
+{
+	external_global currentPosition = odometry_eg();
+
+	double pitch = sensorData[1] * 300; // IMU pitch
+	double roll = sensorData[2] * 300; // IMU roll
+
+    double error_x = setpoint.x - currentPosition.x;
+    double error_y = setpoint.y - currentPosition.y;
+    double current_heading_rad = currentPosition.h * M_PI / 180.0;
+
+    double distance = hypot(error_x, error_y);
+    double velocityFactor = fmin(distance, maxVelocity) / distance;
+
+    double Vx_local = PID_controller(setpoint.x, currentPosition.x, Kp, Ki, Kd) * velocityFactor;
+    double Vy_local = PID_controller(setpoint.y, currentPosition.y, Kp, Ki, Kd) * velocityFactor;
+
+    double Vx = Vx_local * cos(current_heading_rad) - Vy_local * sin(current_heading_rad);
+    double Vy = Vx_local * sin(current_heading_rad) + Vy_local * cos(current_heading_rad);
+    double W = PID_controllerH(setpoint.h, currentPosition.h, KpH);
+
+    if(roll > 0)	{Vx -= roll;}
+    else			{Vx += roll;}
+    if(pitch > 0)	{Vy += pitch;}
+    else			{Vy -= pitch;}
+
+    smoothVelocity(&Vx, &Vy, &W, smoothingFactor);
+    left(Vx, Vy, W);
 }
 
 void PID_EG(external_global setpoint, double Kp, double Ki, double Kd, double KpH, double smoothingFactor, double maxVelocity)
@@ -182,8 +212,8 @@ void PID_EG(external_global setpoint, double Kp, double Ki, double Kd, double Kp
     else			{Vy -= pitch;}
 
     smoothVelocity(&Vx, &Vy, &W, smoothingFactor);
-    trying(Vx, Vy, W, setpoint.h, KpH);
-//    Inverse_Kinematics(Vx, Vy, W);
+//    trying(Vx, Vy, W, setpoint.h, KpH);
+    Inverse_Kinematics(Vx, Vy, W);
 }
 
 void PID_EL(external_local setpoint, double Kp, double Ki, double Kd, double KpH, double smoothingFactor, double maxVelocity)
@@ -381,8 +411,8 @@ void PID_moveToCoordinate(external_global *setpoint, PID_parameter *parameters, 
     else
     {
 		smoothVelocity(&Vx, &Vy, &W, parameters[thread].smoothingFactor);
-		trying(Vx, Vy, W, setpoint[thread].h, parameters[thread].KpH);
-//		Inverse_Kinematics(Vx, Vy, W);
+//		trying(Vx, Vy, W, setpoint[thread].h, parameters[thread].KpH);
+		Inverse_Kinematics(Vx, Vy, W);
     }
 }
 
@@ -563,20 +593,20 @@ void placeBallInSilo(external_global setpoint, double Kp, double Ki, double Kd, 
         double velocityFactor = fmin(distance, maxVelocity) / distance;
 
         Vx = PID_controller(targetX, position.x, Kp, Ki, Kd) * velocityFactor;
-        Vy = PID_controller(targetY, position.y, Kp+0.5, Ki, Kd) * velocityFactor;
+        Vy = PID_controller(targetY, position.y, Kp+1, Ki, Kd) * velocityFactor;
         W = PID_controllerH(setpoint.h, position.h, KpH);
 
         if(bestSilo.distance <= 400) {Vx = 0; Vy = 2000; W = 0;}
 
         smoothVelocity(&Vx, &Vy, &W, smoothingFactor);
-//        Inverse_Kinematics(Vx, Vy, W);
-        trying(Vx, Vy, W, setpoint.h, KpH);
+        Inverse_Kinematics(Vx, Vy, W);
+//        trying(Vx, Vy, W, setpoint.h, KpH);
         lastTime = timer;
     }
     else if(timer - lastTime <= 1600)
     {
-//        Inverse_Kinematics(0, 2000, 0);
-    	trying(0, 2000, 0, setpoint.h, KpH);
+        Inverse_Kinematics(0, 2000, 0);
+//    	trying(0, 2000, 0, setpoint.h, KpH);
     }
     else
     {
@@ -620,13 +650,13 @@ void findAndTakeBall(external_global *findBall)
         double yBall = ballDistance * cos(ballAngle * M_PI / 180.0);
 
         Vx = PID_controller(xBall, 0.0, 1.5, 0.0, 0.0);
-        Vy = PID_controller(yBall, 0.0, 2.0, 0.0, 0.0);
+        Vy = PID_controller(yBall, 0.0, 2.2, 0.0, 0.0)*1.2;
         W = PID_controllerH(ballAngle, 0.0, 1.5);
 
         if(ballDistance <= 400) {Vx = 0; Vy = 2000; W = 0;}
 
         Inverse_Kinematics(Vx, Vy, W);
-        setMotorSpeed(1, -2000);
+        setMotorSpeed(1, -2500);
         lastTimeBallSeen = timer;
         searchStartTime = timer;
     }
@@ -634,7 +664,7 @@ void findAndTakeBall(external_global *findBall)
     {
         // If the ball was recently seen, keep moving forward
         Inverse_Kinematics(0, 2000, 0);
-        setMotorSpeed(1, -2000);
+        setMotorSpeed(1, -2500);
     }
     else
     {
@@ -654,7 +684,7 @@ void findAndTakeBall(external_global *findBall)
         	}
         	if(lastSearchMode == 1)
         	{
-        		lookForTheBall(-10.0, -170.0, position.h);
+        		lookForTheBall(10.0, 170.0, position.h);
         	}
         	else if(lastSearchMode == 2)
         	{
@@ -696,6 +726,7 @@ void findAndTakeBall(external_global *findBall)
         	}
         	break;
         }
+
 //        if (timer - searchStartTime >= 8000)
 //        {
 //            // If searching for more than 8 seconds, move to setpoint
@@ -732,16 +763,17 @@ void throwTheBall(external_global whereTo, double Kp, double Ki, double Kd, doub
 {
 	external_global position = odometry_eg();
 
-	if(atTargetEG(whereTo, position, 400, 5))
+	if(atTargetEG(whereTo, position, 500, 5))
 	{
-		  setMotorSpeed(1, -2000);
-		  setMotorSpeed(2, -2000);
-		  setMotorSpeed(7, -2000);
-		  HAL_Delay(2500);
+		Inverse_Kinematics(0, 0, 0);
+		setMotorSpeed(1, -2400);
+		setMotorSpeed(2, -2000);
+		setMotorSpeed(7, -2800);
+		HAL_Delay(2500);
 	}
 	else
 	{
-		PID_EG(whereTo, Kp, Ki, Kd, KpH, 0.7, 2800);
+		PID_EG(whereTo, Kp, Ki, Kd, KpH, 0.8, 2800);
 	}
 }
 

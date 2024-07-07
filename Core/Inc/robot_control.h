@@ -40,6 +40,7 @@ bool atTargetEL(external_local setpoint, external_local position, double xyToler
 bool atTargetPosition(EKF setpoint, EKF position, double xyTolerance, double hTolerance);
 void lookForTheBall(double targetAngle1, double targetAngle2, double currentAngle);
 void servo_write(int angle);
+void PID_left(external_global setpoint, double Kp, double Ki, double Kd, double KpH, double smoothingFactor, double maxVelocity);
 void PID_EG(external_global setpoint, double Kp, double Ki, double Kd, double KpH, double smoothingFactor, double maxVelocity);
 void PID_EL(external_local setpoint, double Kp, double Ki, double Kd, double KpH, double smoothingFactor, double maxVelocity);
 void PID_IG(internal_global setpoint, double Kp, double Ki, double Kd, double KpH, double smoothingFactor, double maxVelocity);
