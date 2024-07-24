@@ -1,0 +1,3 @@
+../Library/Src/invicto_motor.c:39:6:motorDirection	24	static
+../Library/Src/invicto_motor.c:76:6:setMotorSpeed	40	static
+../Library/Src/invicto_motor.c:110:6:Inverse_Kinematics	240	static

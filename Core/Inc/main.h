@@ -31,11 +31,12 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "invicto_motor.h"
-#include "odometry.h"
-#include "lcd_i2c.h"
-#include <robot_control.h>
-#include "pid.h"
+#include <Library/Inc/lcd_i2c.h>
+#include <Library/Inc/invicto_motor.h>
+#include <Library/Inc/odometry.h>
+#include <Library/Inc/pid.h>
+#include <Library/Inc/robot_control.h>
+
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
