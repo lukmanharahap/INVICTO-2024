@@ -126,7 +126,7 @@ def main():
     com = initialize_serial()
     cap = initialize_camera(0)
     cap2 = initialize_camera(2)
-    model = YOLO("models\terbaru.pt").to(device)
+    model = YOLO("models\ball_silo.pt").to(device)
 
     frame_center = (320, 180)  # 640x360 resolution
     focal_length = 240  # adjust as needed
