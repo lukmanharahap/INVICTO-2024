@@ -31,7 +31,6 @@ Proyek ini menggunakan YOLO untuk mendeteksi bola dan silo dalam sistem robot. D
 
    ```bash
    pip install -r requirements.txt
-   python src/main.py
    ```
 
 4. **Run the code:**
